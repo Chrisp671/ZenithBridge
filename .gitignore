@@ -24,6 +24,7 @@ data.json
 
 # Development artifacts
 tmp/
+devlog/
 *.backup
 *.patch
 *-refactored.*
@@ -32,7 +33,6 @@ migrate-to-refactored.sh
 main-refactored.patch
 
 # Testing and development files
-test-*.js
 terminal-pty-research.md
 plan.md
 

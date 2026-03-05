@@ -1,7 +1,11 @@
 import { spawn, ChildProcess } from "child_process";
 import { Terminal } from "@xterm/xterm";
 import { Writable } from "stream";
+import { writeFileSync, unlinkSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import unixPseudoterminalPy from "./unix_pseudoterminal.py";
+import windowsPseudoterminalPy from "./windows_pseudoterminal.py";
 
 export interface Pseudoterminal {
   readonly shell?: Promise<ChildProcess> | undefined;
@@ -137,6 +141,132 @@ export class UnixPseudoterminal implements Pseudoterminal {
   }
 }
 
+export class WindowsPseudoterminal implements Pseudoterminal {
+  public readonly shell: Promise<ChildProcess>;
+  public readonly onExit: Promise<NodeJS.Signals | number>;
+  private scriptPath: string | null = null;
+
+  constructor(args: PseudoterminalArgs) {
+    this.shell = this.spawnPythonHelper(args);
+    this.onExit = this.shell.then(shell =>
+      new Promise(resolve => {
+        shell.once("exit", (code, signal) => {
+          resolve(code ?? signal ?? NaN);
+        });
+      })
+    );
+  }
+
+  private async spawnPythonHelper(args: PseudoterminalArgs): Promise<ChildProcess> {
+    const python = args.pythonExecutable || "python";
+
+    // Write Python script to temp file to avoid Windows command-line quoting issues
+    // Passing a multi-line Python script via -c on Windows is unreliable due to
+    // how CreateProcessW handles quotes and special characters in the command line.
+    this.scriptPath = join(
+      tmpdir(),
+      `obsidian-pty-${Date.now()}-${Math.random().toString(36).slice(2)}.py`
+    );
+    writeFileSync(this.scriptPath, windowsPseudoterminalPy, "utf-8");
+    console.debug(`[Windows PTY] Wrote helper script to: ${this.scriptPath}`);
+
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      ...args.env,
+      PYTHONIOENCODING: "utf-8",
+    };
+
+    if (args.terminal) {
+      env["TERM"] = args.terminal;
+    }
+
+    const child = spawn(
+      python,
+      [this.scriptPath, args.executable, ...(args.args || [])],
+      {
+        cwd: args.cwd,
+        env,
+        stdio: ["pipe", "pipe", "pipe"],
+        windowsHide: true,
+      }
+    );
+
+    // Clean up temp file when process exits
+    const scriptToClean = this.scriptPath;
+    child.once("exit", () => {
+      try { unlinkSync(scriptToClean); } catch {}
+    });
+
+    // Also clean up on spawn error
+    child.on("error", (error) => {
+      console.error("[Windows PTY] Spawn error:", error);
+      try { unlinkSync(scriptToClean); } catch {}
+    });
+
+    // Log stderr for debugging (ConPTY status messages)
+    child.stderr?.on("data", (chunk: Buffer) => {
+      console.debug("[Windows PTY stderr]", chunk.toString().trim());
+    });
+
+    return child;
+  }
+
+  async pipe(terminal: Terminal): Promise<void> {
+    const shell = await this.shell;
+
+    const reader = (chunk: Buffer | string): void => {
+      try {
+        terminal.write(chunk.toString());
+      } catch (error: unknown) {
+        console.error("[Terminal] Write error:", error);
+      }
+    };
+
+    // Only pipe stdout to terminal (stderr goes to console for debugging)
+    shell.stdout?.on("data", reader);
+
+    // Pipe terminal input to shell stdin
+    const disposable = terminal.onData(async (data: string) => {
+      try {
+        if (shell.stdin && !shell.stdin.destroyed) {
+          await writePromise(shell.stdin, data);
+        }
+      } catch (error) {
+        console.error("[Terminal] Input error:", error);
+      }
+    });
+
+    // Clean up on exit
+    this.onExit.catch(() => {}).finally(() => {
+      shell.stdout?.removeListener("data", reader);
+      disposable.dispose();
+    });
+  }
+
+  async resize(columns: number, rows: number): Promise<void> {
+    try {
+      const shell = await this.shell;
+      if (shell.stdin && !shell.stdin.destroyed) {
+        // Send resize command using custom OSC escape sequence
+        // The Python helper script intercepts this and calls proc.setwinsize()
+        shell.stdin.write(`\x1b]9999;${columns}x${rows}\x07`);
+      }
+    } catch (error) {
+      console.warn("[Terminal] Resize failed:", error);
+    }
+  }
+
+  async kill(): Promise<void> {
+    try {
+      const shell = await this.shell;
+      shell.kill();
+    } catch (error) {
+      console.error("[Terminal] Kill failed:", error);
+      throw error;
+    }
+  }
+}
+
 export class ChildProcessPseudoterminal implements Pseudoterminal {
   public readonly shell: Promise<ChildProcess>;
   public readonly onExit: Promise<NodeJS.Signals | number>;
@@ -153,11 +283,7 @@ export class ChildProcessPseudoterminal implements Pseudoterminal {
   }
 
   private async spawnChildProcess(args: PseudoterminalArgs): Promise<ChildProcess> {
-    const isWindows = process.platform === "win32";
-    const shell = isWindows ? "cmd.exe" : args.executable;
-    const shellArgs = isWindows ? [] : (args.args || []);
-
-    return spawn(shell, shellArgs, {
+    return spawn(args.executable, args.args || [], {
       cwd: args.cwd,
       env: {
         ...process.env,
@@ -165,6 +291,7 @@ export class ChildProcessPseudoterminal implements Pseudoterminal {
         TERM: args.terminal || "xterm-256color",
       },
       stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32",
     });
   }
 
@@ -186,7 +313,7 @@ export class ChildProcessPseudoterminal implements Pseudoterminal {
     // Pipe terminal input to shell
     const disposable = terminal.onData(async (data: string) => {
       try {
-        if (shell.stdin) {
+        if (shell.stdin && !shell.stdin.destroyed) {
           await writePromise(shell.stdin, data);
         }
       } catch (error) {

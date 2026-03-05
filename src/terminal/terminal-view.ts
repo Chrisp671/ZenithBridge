@@ -1,10 +1,10 @@
 import { ItemView, WorkspaceLeaf, Notice, App } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { spawn, ChildProcess } from "child_process";
 import {
 	Pseudoterminal,
 	UnixPseudoterminal,
+	WindowsPseudoterminal,
 	ChildProcessPseudoterminal,
 } from "./pseudoterminal";
 import { PythonManager } from "./python-detection";
@@ -15,7 +15,6 @@ export const TERMINAL_VIEW_TYPE = "claude-terminal-view";
 export class ClaudeTerminalView extends ItemView {
 	private terminal: Terminal;
 	private fitAddon: FitAddon;
-	private shell: ChildProcess | null = null;
 	private pseudoterminal: Pseudoterminal | null = null;
 	private pythonManager = new PythonManager();
 	private isDestroyed = false;
@@ -154,11 +153,6 @@ export class ClaudeTerminalView extends ItemView {
 			this.pseudoterminal = null;
 		}
 
-		if (this.shell) {
-			this.shell.kill("SIGTERM");
-			this.shell = null;
-		}
-
 		if (this.terminal) {
 			this.terminal.dispose();
 		}
@@ -168,8 +162,6 @@ export class ClaudeTerminalView extends ItemView {
 		if (this.fitAddon && !this.isDestroyed) {
 			setTimeout(() => {
 				this.fitAddon.fit();
-				// Note: child_process doesn't support resize like node-pty
-				// For proper terminal resizing, we'd need a PTY library
 			}, 100);
 		}
 	}
@@ -185,42 +177,72 @@ export class ClaudeTerminalView extends ItemView {
 			// Determine shell command based on platform
 			const isWindows = process.platform === "win32";
 			const shell = isWindows
-				? "cmd.exe"
+				? "powershell.exe"
 				: process.env.SHELL || "/bin/zsh";
-			const args = isWindows ? [] : ["-l"];
+			const args = isWindows ? ["-NoLogo"] : ["-l"];
 
 			console.debug(`[Terminal] Starting shell: ${shell}`, args);
 			console.debug(`[Terminal] Working directory: ${vaultPath}`);
+			console.debug(`[Terminal] Python available: ${this.pythonManager.isAvailable()}`);
 
-			// Try Python PTY approach first
-			if (this.pythonManager.isAvailable() && !isWindows) {
+			// Try Python PTY approach first (required for interactive TUI apps)
+			if (this.pythonManager.isAvailable()) {
 				try {
-					console.debug("[Terminal] Using Python PTY approach");
-					await this.startPythonPTY(shell, args, vaultPath);
+					if (isWindows) {
+						console.debug("[Terminal] Using Windows ConPTY via pywinpty");
+						await this.startWindowsPTY(shell, args, vaultPath);
+					} else {
+						console.debug("[Terminal] Using Unix Python PTY approach");
+						await this.startPythonPTY(shell, args, vaultPath);
+					}
 					return;
 				} catch (error) {
 					console.warn(
 						"[Terminal] Python PTY failed, falling back to child_process:",
 						error
 					);
-					new Notice("Terminal: Python PTY failed, using basic mode");
-				}
-			} else {
-				if (!this.pythonManager.isAvailable()) {
-					console.debug(
-						"[Terminal] Python not available, using child_process fallback"
-					);
-				}
-				if (isWindows) {
-					console.debug(
-						"[Terminal] Windows platform, using child_process fallback"
-					);
+					new Notice("Terminal: PTY not available. Install Python 3.7+ (Windows: also run 'pip install pywinpty') for full terminal support.", 8000);
 				}
 			}
+
+			// Fallback: use child_process (works on all platforms but no true PTY)
+			console.debug("[Terminal] Using child_process fallback");
+			await this.startChildProcess(shell, args, vaultPath);
 		} catch (error: any) {
 			console.error("[Terminal] Failed to start shell:", error);
 			this.terminal.write(`Failed to start shell: ${error.message}\r\n`);
 		}
+	}
+
+	private async startChildProcess(
+		shell: string,
+		args: string[],
+		vaultPath: string
+	): Promise<void> {
+		this.pseudoterminal = new ChildProcessPseudoterminal({
+			executable: shell,
+			args,
+			cwd: vaultPath,
+			env: this.getTerminalEnv(),
+		});
+
+		await this.pseudoterminal.pipe(this.terminal);
+
+		this.pseudoterminal.onExit
+			.then((exitCode) => {
+				console.debug(`[Terminal] Shell exited with code ${exitCode}`);
+				if (!this.isDestroyed) {
+					this.terminal.write(
+						`\r\n\r\nShell exited with code ${exitCode}\r\n`
+					);
+				}
+			})
+			.catch((error: unknown) => {
+				console.error("[Terminal] Shell error:", error);
+			});
+
+		// Auto-launch startup command after a brief delay
+		setTimeout(() => this.launchStartupCommand(), 500);
 	}
 
 	private async startPythonPTY(
@@ -259,8 +281,56 @@ export class ClaudeTerminalView extends ItemView {
 				console.error("[Terminal] PTY error:", error);
 			});
 
-		// Auto-launch claude command after a brief delay
-		setTimeout(() => this.launchClaude(), 100);
+		// Auto-launch startup command after a brief delay
+		setTimeout(() => this.launchStartupCommand(), 100);
+	}
+
+	private async startWindowsPTY(
+		shell: string,
+		args: string[],
+		vaultPath: string
+	): Promise<void> {
+		const pythonExecutable = this.pythonManager.getExecutable();
+		if (!pythonExecutable) {
+			throw new Error("Python executable not available");
+		}
+
+		console.debug(`[Terminal] Windows ConPTY: python=${pythonExecutable}, shell=${shell}, args=${args}`);
+
+		// Pass terminal dimensions via environment so ConPTY starts with correct size
+		const env = this.getTerminalEnv();
+		env["TERM_COLS"] = String(this.terminal.cols || 120);
+		env["TERM_ROWS"] = String(this.terminal.rows || 30);
+
+		this.pseudoterminal = new WindowsPseudoterminal({
+			executable: shell,
+			args,
+			cwd: vaultPath,
+			pythonExecutable,
+			terminal: "xterm-256color",
+			env,
+		});
+
+		// Pipe pseudoterminal to xterm
+		await this.pseudoterminal.pipe(this.terminal);
+
+		// Handle exit
+		this.pseudoterminal.onExit
+			.then((exitCode) => {
+				console.debug(`[Terminal] Windows PTY exited with code ${exitCode}`);
+				if (!this.isDestroyed) {
+					this.terminal.write(
+						`\r\n\r\nShell exited with code ${exitCode}\r\n`
+					);
+				}
+			})
+			.catch((error: unknown) => {
+				console.error("[Terminal] Windows PTY error:", error);
+			});
+
+		// Auto-launch startup command after shell initializes
+		// Give PowerShell enough time to start inside the ConPTY
+		setTimeout(() => this.launchStartupCommand(), 1500);
 	}
 
 	private getTerminalEnv(): NodeJS.ProcessEnv {
@@ -274,19 +344,22 @@ export class ClaudeTerminalView extends ItemView {
 				process.env.ENABLE_IDE_INTEGRATION || "true",
 			FORCE_CODE_TERMINAL: "true",
 
-			TERM_PROGRAM: "obsidian-claude-terminal", // Identifies this as integrated terminal
+			TERM_PROGRAM: "obsidian-claude-terminal",
 			TERM_PROGRAM_VERSION: "1.0.0",
-			VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE || "", // VSCode compat
+			VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE || "",
 			VSCODE_GIT_ASKPASS_EXTRA_ARGS:
 				process.env.VSCODE_GIT_ASKPASS_EXTRA_ARGS || "",
 
-			// Alternative: Set a specific IDE integration flag
 			CLAUDE_CODE_IDE_INTEGRATION: "obsidian",
 			CLAUDE_CODE_INTEGRATED_TERMINAL: "true",
 		};
 	}
 
-	private async launchClaude(): Promise<void> {
+	/**
+	 * Sends the configured startup command to the running shell.
+	 * Used by all PTY modes (Unix, Windows ConPTY, and child_process fallback).
+	 */
+	private async launchStartupCommand(): Promise<void> {
 		if (!this.isDestroyed && this.pseudoterminal) {
 			const startupCommand = this.plugin.settings.startupCommand.trim();
 
@@ -303,9 +376,9 @@ export class ClaudeTerminalView extends ItemView {
 			);
 			try {
 				const shell = await this.pseudoterminal.shell;
-				if (shell && shell.stdin) {
-					// Launch the configured startup command
-					shell.stdin.write(`${startupCommand}\n`);
+				if (shell && shell.stdin && !shell.stdin.destroyed) {
+					// Use \r (carriage return) as that's the correct terminal Enter key
+					shell.stdin.write(`${startupCommand}\r`);
 				}
 			} catch (error) {
 				console.warn(

@@ -30,17 +30,13 @@ export class McpHandlers {
 	}
 
 	async handleRequest(sock: WebSocket, req: McpRequest): Promise<void> {
-		console.debug(`[MCP] Handling request: ${req.method}`, req.params);
+		console.debug(`[MCP] Handling request: ${req.method}`);
 		const reply: McpReplyFunction = (msg) => {
 			const response = JSON.stringify({
 				jsonrpc: "2.0",
 				id: req.id,
 				...msg,
 			});
-			console.debug(
-				`[MCP] Sending response for ${req.method}:`,
-				response
-			);
 			sock.send(response);
 		};
 
@@ -52,7 +48,7 @@ export class McpHandlers {
 		req: McpRequest,
 		reply: HttpMcpReplyFunction
 	): Promise<void> {
-		console.debug(`[MCP HTTP] Handling request: ${req.method}`, req.params);
+		console.debug(`[MCP HTTP] Handling request: ${req.method}`);
 		// HTTP requests use the HTTP tool registry
 		return this.handleRequestGeneric(req, reply, "http");
 	}

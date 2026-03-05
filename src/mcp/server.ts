@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
 import * as fs from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
+import * as http from "http";
 import { McpRequest, McpNotification } from "./types";
 import { getClaudeIdeDir } from "../claude-config";
 
@@ -13,23 +15,37 @@ export interface McpServerConfig {
 export class McpServer {
 	private wss!: WebSocketServer;
 	private lockFilePath = "";
+	private lockFilePaths: string[] = [];
 	private connectedClients: Set<WebSocket> = new Set();
 	private config: McpServerConfig;
 	private port: number = 0;
+	private authToken: string = "";
 
 	constructor(config: McpServerConfig) {
 		this.config = config;
 	}
 
 	async start(): Promise<number> {
+		// Generate a unique auth token for this session
+		this.authToken = crypto.randomUUID();
+
 		// 0 = choose a random free port
 		this.wss = new WebSocketServer({ port: 0 });
 
 		// address() is cast-safe once server is listening
 		this.port = (this.wss.address() as any).port as number;
 
-		this.wss.on("connection", (sock: WebSocket) => {
-			console.debug("[MCP] Client connected");
+		this.wss.on("connection", (sock: WebSocket, request: http.IncomingMessage) => {
+			// Validate auth token from query parameter
+			const url = new URL(request.url || "", `http://localhost:${this.port}`);
+			const token = url.searchParams.get("authToken");
+			if (token !== this.authToken) {
+				console.warn("[MCP] Client rejected: invalid or missing auth token");
+				sock.close(4001, "Unauthorized");
+				return;
+			}
+
+			console.debug("[MCP] Client connected (authenticated)");
 			this.connectedClients.add(sock);
 			console.debug(`[MCP] Total connected clients: ${this.connectedClients.size}`);
 
@@ -68,14 +84,18 @@ export class McpServer {
 
 	stop(): void {
 		this.wss?.close();
-		if (this.lockFilePath && fs.existsSync(this.lockFilePath)) {
-			fs.unlinkSync(this.lockFilePath);
+		// Clean up all lock file copies
+		for (const lockPath of this.lockFilePaths) {
+			try {
+				if (fs.existsSync(lockPath)) {
+					fs.unlinkSync(lockPath);
+				}
+			} catch {}
 		}
 	}
 
 	broadcast(message: McpNotification): void {
 		const messageStr = JSON.stringify(message);
-		console.debug("[MCP] Broadcasting message:", messageStr);
 		for (const client of this.connectedClients) {
 			if (client.readyState === WebSocket.OPEN) {
 				client.send(messageStr);
@@ -84,9 +104,7 @@ export class McpServer {
 	}
 
 	get clientCount(): number {
-		const count = this.connectedClients.size;
-		console.debug(`[MCP] WebSocket server clientCount getter called: ${count}`);
-		return count;
+		return this.connectedClients.size;
 	}
 
 	get serverPort(): number {
@@ -94,36 +112,62 @@ export class McpServer {
 	}
 
 	private async createLockFile(port: number): Promise<void> {
-		const ideDir = getClaudeIdeDir();
-		fs.mkdirSync(ideDir, { recursive: true });
-
-		this.lockFilePath = path.join(ideDir, `${port}.lock`);
-		
-		// We'll get the base path from the caller
 		const lockFileContent = {
 			pid: process.pid,
-			workspaceFolders: [], // Will be populated by caller
+			workspaceFolders: [] as string[],
 			ideName: "Obsidian",
 			transport: "ws",
+			authToken: this.authToken,
+			runningInWindows: process.platform === "win32",
 		};
-		fs.writeFileSync(this.lockFilePath, JSON.stringify(lockFileContent));
+		const lockJson = JSON.stringify(lockFileContent);
+
+		// Write lock file to the primary IDE directory
+		const ideDir = getClaudeIdeDir();
+		fs.mkdirSync(ideDir, { recursive: true });
+		this.lockFilePath = path.join(ideDir, `${port}.lock`);
+		fs.writeFileSync(this.lockFilePath, lockJson);
+		this.lockFilePaths.push(this.lockFilePath);
+
+		// Also write to the alternate config location so Claude Code can find it
+		// regardless of whether it checks ~/.config/claude/ide/ or ~/.claude/ide/
+		const homeDir = require("os").homedir();
+		const altDirs = [
+			path.join(homeDir, ".claude", "ide"),
+			path.join(homeDir, ".config", "claude", "ide"),
+		];
+		for (const altDir of altDirs) {
+			if (altDir === ideDir) continue; // Already written above
+			try {
+				fs.mkdirSync(altDir, { recursive: true });
+				const altPath = path.join(altDir, `${port}.lock`);
+				fs.writeFileSync(altPath, lockJson);
+				this.lockFilePaths.push(altPath);
+			} catch {
+				// Alternate location not writable, skip
+			}
+		}
 	}
 
 	updateWorkspaceFolders(basePath: string): void {
-		if (this.lockFilePath && fs.existsSync(this.lockFilePath)) {
-			const lockContent = JSON.parse(fs.readFileSync(this.lockFilePath, 'utf8'));
-			lockContent.workspaceFolders = [basePath];
-			fs.writeFileSync(this.lockFilePath, JSON.stringify(lockContent));
+		// Update all lock file copies with the workspace path
+		for (const lockPath of this.lockFilePaths) {
+			try {
+				if (fs.existsSync(lockPath)) {
+					const lockContent = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+					lockContent.workspaceFolders = [basePath];
+					fs.writeFileSync(lockPath, JSON.stringify(lockContent));
+				}
+			} catch {}
 		}
 	}
 
 	private handleMessage(sock: WebSocket, raw: string): void {
-		console.debug("[MCP] Received message:", raw);
 		let req: McpRequest;
 		try {
 			req = JSON.parse(raw);
 		} catch {
-			console.debug("[MCP] Invalid JSON received:", raw);
+			console.debug("[MCP] Invalid JSON received");
 			return; // ignore invalid JSON
 		}
 

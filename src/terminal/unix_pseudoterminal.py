@@ -11,7 +11,14 @@ import sys as _sys
 from sys import exit as _exit, stdin as _stdin, stdout as _stdout
 from typing import Callable as _Callable, cast as _cast
 
-if _sys.platform != "win32":
+# This module is Unix-only. Windows uses windows_pseudoterminal.py instead.
+if _sys.platform == "win32":
+    def main():
+        _sys.stderr.write("ERROR: unix_pseudoterminal.py does not support Windows.\n")
+        _sys.stderr.write("Use windows_pseudoterminal.py with WindowsPseudoterminal instead.\n")
+        _sys.stderr.flush()
+        _exit(1)
+else:
     from fcntl import ioctl as _ioctl
     import pty as _pty
     from termios import TIOCSWINSZ as _TIOCSWINSZ
@@ -77,11 +84,6 @@ if _sys.platform != "win32":
                     key.data()
 
         _exit(_ws_to_ec(_waitpid(pid, 0)[1]))
-
-else:
-
-    def main():
-        raise NotImplementedError(_sys.platform)
 
 
 if __name__ == "__main__":
