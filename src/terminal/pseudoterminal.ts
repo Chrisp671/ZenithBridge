@@ -194,13 +194,21 @@ export class WindowsPseudoterminal implements Pseudoterminal {
     // Clean up temp file when process exits
     const scriptToClean = this.scriptPath;
     child.once("exit", () => {
-      try { unlinkSync(scriptToClean); } catch {}
+      try {
+        unlinkSync(scriptToClean);
+      } catch (error) {
+        console.warn(`[Windows PTY] Failed to clean up temp script ${scriptToClean}:`, error);
+      }
     });
 
     // Also clean up on spawn error
-    child.on("error", (error) => {
-      console.error("[Windows PTY] Spawn error:", error);
-      try { unlinkSync(scriptToClean); } catch {}
+    child.on("error", (spawnError) => {
+      console.error("[Windows PTY] Spawn error:", spawnError);
+      try {
+        unlinkSync(scriptToClean);
+      } catch (cleanupError) {
+        console.warn(`[Windows PTY] Failed to clean up temp script ${scriptToClean}:`, cleanupError);
+      }
     });
 
     // Log stderr for debugging (ConPTY status messages)

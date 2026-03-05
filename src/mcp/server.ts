@@ -90,7 +90,9 @@ export class McpServer {
 				if (fs.existsSync(lockPath)) {
 					fs.unlinkSync(lockPath);
 				}
-			} catch {}
+			} catch (error) {
+				console.warn(`[MCP] Failed to clean up lock file ${lockPath}:`, error);
+			}
 		}
 	}
 
@@ -126,7 +128,7 @@ export class McpServer {
 		const ideDir = getClaudeIdeDir();
 		fs.mkdirSync(ideDir, { recursive: true });
 		this.lockFilePath = path.join(ideDir, `${port}.lock`);
-		fs.writeFileSync(this.lockFilePath, lockJson);
+		fs.writeFileSync(this.lockFilePath, lockJson, { mode: 0o600 });
 		this.lockFilePaths.push(this.lockFilePath);
 
 		// Also write to the alternate config location so Claude Code can find it
@@ -141,7 +143,7 @@ export class McpServer {
 			try {
 				fs.mkdirSync(altDir, { recursive: true });
 				const altPath = path.join(altDir, `${port}.lock`);
-				fs.writeFileSync(altPath, lockJson);
+				fs.writeFileSync(altPath, lockJson, { mode: 0o600 });
 				this.lockFilePaths.push(altPath);
 			} catch {
 				// Alternate location not writable, skip
@@ -156,9 +158,11 @@ export class McpServer {
 				if (fs.existsSync(lockPath)) {
 					const lockContent = JSON.parse(fs.readFileSync(lockPath, "utf8"));
 					lockContent.workspaceFolders = [basePath];
-					fs.writeFileSync(lockPath, JSON.stringify(lockContent));
+					fs.writeFileSync(lockPath, JSON.stringify(lockContent), { mode: 0o600 });
 				}
-			} catch {}
+			} catch (error) {
+				console.warn(`[MCP] Failed to update workspace in lock file ${lockPath}:`, error);
+			}
 		}
 	}
 
