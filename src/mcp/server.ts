@@ -96,7 +96,6 @@ export class McpServer {
 
 	broadcast(message: McpNotification): void {
 		const messageStr = JSON.stringify(message);
-		console.debug("[MCP] Broadcasting message:", messageStr);
 		for (const client of this.connectedClients) {
 			if (client.readyState === WebSocket.OPEN) {
 				client.send(messageStr);
@@ -105,9 +104,7 @@ export class McpServer {
 	}
 
 	get clientCount(): number {
-		const count = this.connectedClients.size;
-		console.debug(`[MCP] WebSocket server clientCount getter called: ${count}`);
-		return count;
+		return this.connectedClients.size;
 	}
 
 	get serverPort(): number {
@@ -166,12 +163,11 @@ export class McpServer {
 	}
 
 	private handleMessage(sock: WebSocket, raw: string): void {
-		console.debug("[MCP] Received message:", raw);
 		let req: McpRequest;
 		try {
 			req = JSON.parse(raw);
 		} catch {
-			console.debug("[MCP] Invalid JSON received:", raw);
+			console.debug("[MCP] Invalid JSON received");
 			return; // ignore invalid JSON
 		}
 

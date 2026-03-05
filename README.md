@@ -1,17 +1,61 @@
 # Obsidian Claude Code
 
-An Obsidian plugin that implements an MCP (Model Context Protocol) server to enable Claude Code integration with Obsidian vaults.
-
-This plugin allows Claude Code and other MCP clients (like Claude Desktop) to interact with your Obsidian vault, providing AI-powered assistance with direct access to your notes and files.
+An Obsidian plugin that integrates Claude Code with your vault. It provides an embedded terminal for running Claude Code directly inside Obsidian and an MCP (Model Context Protocol) server for connecting external Claude clients.
 
 ## Features
 
--   **Dual Transport MCP Server**: Supports both WebSocket (for Claude Code) and HTTP/SSE (for Claude Desktop)
--   **Auto-Discovery**: Claude Code automatically finds and connects to your vault
+-   **Embedded Terminal**: Run Claude Code inside Obsidian with full PTY support (Ctrl+` or command palette)
+-   **Windows ConPTY**: Real pseudo-terminal on Windows via Python's `pywinpty`
+-   **Unix PTY**: Native pseudo-terminal on macOS/Linux via Python's `pty` stdlib module
+-   **Fallback Mode**: Basic `child_process` terminal if Python is not available
+-   **Dual Transport MCP Server**: WebSocket (for Claude Code CLI) and HTTP/SSE (for Claude Desktop)
+-   **Auto-Discovery**: Lock files with `authToken` written to both `~/.config/claude/ide/` and `~/.claude/ide/`
 -   **File Operations**: Read and write vault files through MCP protocol
 -   **Workspace Context**: Provides current active file and vault structure to Claude
--   **Multiple Client Support**: Connect both Claude Code and Claude Desktop simultaneously
--   **Configurable Ports**: Avoid conflicts when running multiple vaults
+-   **Multiple Client Support**: Connect Claude Code, Claude Desktop, and the embedded terminal simultaneously
+
+## Setup / Requirements
+
+### All Platforms
+
+-   **Obsidian** v1.4.0+
+-   **Python 3.7+** (optional but recommended for full terminal support)
+
+Without Python, the embedded terminal falls back to a basic `child_process` mode that lacks true PTY capabilities (no interactive TUI apps, no proper resize handling).
+
+### Windows
+
+Install `pywinpty` for ConPTY support:
+
+```
+pip install pywinpty
+```
+
+### macOS / Linux
+
+No extra packages needed. The terminal uses Python's built-in `pty` and `selectors` modules from the standard library.
+
+## Embedded Terminal
+
+The plugin includes a built-in terminal that runs directly inside Obsidian.
+
+**Opening the terminal:**
+
+-   Press `Ctrl+`` (backtick)
+-   Or use the command palette: "Open Claude Terminal"
+-   Or click the Claude icon in the ribbon sidebar
+
+When the terminal opens, it launches your platform's default shell (PowerShell on Windows, `$SHELL` on Unix) with the working directory set to your vault root. If a startup command is configured (default: `claude`), it runs automatically.
+
+**PTY mode selection** (automatic):
+
+| Platform | Python available | pywinpty installed | Mode used |
+|---|---|---|---|
+| Windows | Yes | Yes | ConPTY via pywinpty |
+| Windows | Yes | No | Fallback (child_process) |
+| Windows | No | - | Fallback (child_process) |
+| macOS/Linux | Yes | - | Unix PTY via stdlib |
+| macOS/Linux | No | - | Fallback (child_process) |
 
 ## MCP Client Configuration
 
@@ -80,7 +124,7 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Custom Port Setup:**
 
-1.  Go to **Obsidian Settings** → **Community Plugins** → **Claude Code** → **Settings**
+1.  Go to **Obsidian Settings** > **Community Plugins** > **Claude Code** > **Settings**
 2.  Change the **"HTTP Server Port"** in the MCP Server Configuration section
 3.  **Update your Claude Desktop config** to use the new port:
     ```json
@@ -107,7 +151,49 @@ _As of 2025-06-09_
 >
 > To ensure compatibility, we use the legacy ["HTTP with SSE" protocol (2024-11-05)](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse). Adhering to the newest specification will lead to connection failures with current tools.
 
-### Troubleshooting
+## Configuration
+
+Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Claude Code**.
+
+### MCP Server Configuration
+
+| Setting | Default | Description |
+|---|---|---|
+| Enable WebSocket Server | On | WebSocket server for Claude Code CLI auto-discovery via lock files |
+| Enable HTTP/SSE Server | On | HTTP/SSE server for Claude Desktop and other MCP clients |
+| HTTP Server Port | 22360 | Port for the HTTP/SSE MCP server (1024-65535) |
+
+### Terminal Configuration
+
+| Setting | Default | Description |
+|---|---|---|
+| Enable Embedded Terminal | On | Enable/disable the built-in terminal. Requires plugin reload. |
+| Auto-close terminal on Claude exit | On | Close the terminal view when the Claude process exits |
+| Startup command | `claude` | Command to run when the terminal opens. Leave empty to disable auto-launch. |
+
+## Troubleshooting
+
+### Terminal Issues
+
+**Terminal not starting / "No suitable Python installation found"**
+-   Install Python 3.7+ and ensure it is on your `PATH`
+-   Windows: `python --version` should print `Python 3.x.x` (not open the Microsoft Store)
+-   macOS: `python3 --version` should work. If not, install via Homebrew: `brew install python`
+
+**"pywinpty not installed" (Windows only)**
+-   Run `pip install pywinpty` in your terminal
+-   If you use multiple Python installations, install it for the one on your `PATH`
+
+**Terminal falls back to basic mode**
+-   Python was not found, or dependency checks failed
+-   Check the Obsidian developer console (Ctrl+Shift+I) for `[Terminal]` log messages
+-   On Windows, verify pywinpty: `python -c "from winpty import PtyProcess; print('OK')"`
+-   On macOS/Linux, verify pty: `python3 -c "import pty, selectors; print('OK')"`
+
+**Interactive apps (vim, htop, etc.) not working**
+-   These require a real PTY. Make sure Python is installed so the plugin uses PTY mode instead of fallback mode.
+
+### MCP Connection Issues
 
 **Claude Desktop not connecting:**
 
@@ -119,11 +205,20 @@ _As of 2025-06-09_
 **Claude Code not finding vault:**
 
 -   Verify the plugin is enabled in Obsidian
--   Check for `.lock` files in Claude config directory:
+-   Check for `.lock` files in Claude config directories:
     -   `$CLAUDE_CONFIG_DIR/ide/` if environment variable is set
     -   `~/.config/claude/ide/` (default since Claude Code v1.0.30)
     -   `~/.claude/ide/` (legacy location)
+-   The plugin writes lock files to both `~/.config/claude/ide/` and `~/.claude/ide/` for maximum compatibility
 -   Restart Obsidian if the vault doesn't appear in `/ide` list
+
+**Stale lock files**
+-   If Obsidian crashes, lock files may not be cleaned up
+-   Delete any `.lock` files in `~/.config/claude/ide/` and `~/.claude/ide/`, then restart Obsidian
+
+**Auth token errors (Claude Code v2.1.69+)**
+-   Lock files include an `authToken` field for secure WebSocket connections
+-   If you see authentication failures, restart Obsidian to regenerate the lock file with a fresh token
 
 **Port conflicts:**
 

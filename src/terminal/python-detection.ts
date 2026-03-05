@@ -54,7 +54,11 @@ export async function detectPython(): Promise<PythonInfo | null> {
     }
   }
 
-  console.warn("[Terminal] No suitable Python installation found");
+  console.warn(
+    "[Terminal] No suitable Python installation found. " +
+    "Install Python 3.7+ from https://www.python.org/downloads/ " +
+    "(Windows users: also run 'pip install pywinpty' for full terminal support)."
+  );
   return null;
 }
 

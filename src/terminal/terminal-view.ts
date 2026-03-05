@@ -201,7 +201,7 @@ export class ClaudeTerminalView extends ItemView {
 						"[Terminal] Python PTY failed, falling back to child_process:",
 						error
 					);
-					new Notice("Terminal: PTY initialization failed, using basic mode");
+					new Notice("Terminal: PTY not available. Install Python 3.7+ (Windows: also run 'pip install pywinpty') for full terminal support.", 8000);
 				}
 			}
 
