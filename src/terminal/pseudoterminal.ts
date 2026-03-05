@@ -313,7 +313,7 @@ export class ChildProcessPseudoterminal implements Pseudoterminal {
     // Pipe terminal input to shell
     const disposable = terminal.onData(async (data: string) => {
       try {
-        if (shell.stdin) {
+        if (shell.stdin && !shell.stdin.destroyed) {
           await writePromise(shell.stdin, data);
         }
       } catch (error) {

@@ -10,44 +10,57 @@ export interface PythonInfo {
 }
 
 export async function detectPython(): Promise<PythonInfo | null> {
-  const candidates = [
-    "python3",
-    "python", 
-    "/usr/bin/python3",
-    "/usr/local/bin/python3",
-    "/opt/homebrew/bin/python3"
-  ];
-  
+  const isWindows = process.platform === "win32";
+
+  // Platform-specific candidate ordering:
+  // - Windows: "python" first (python3 triggers Microsoft Store redirect)
+  // - Unix: "python3" first (python might be Python 2 on some systems)
+  const candidates = isWindows
+    ? ["python", "python3"]
+    : [
+        "python3",
+        "python",
+        "/usr/bin/python3",
+        "/usr/local/bin/python3",
+        "/opt/homebrew/bin/python3",
+      ];
+
   for (const python of candidates) {
     try {
-      const result = await execAsync(`${python} --version`);
+      // Quote executable in case it contains spaces
+      const result = await execAsync(`"${python}" --version`);
       const versionMatch = result.stdout.match(/Python (\d+\.\d+\.\d+)/);
-      
+
       if (versionMatch) {
         const version = versionMatch[1];
-        const [major, minor] = version.split('.').map(Number);
-        
+        const [major, minor] = version.split(".").map(Number);
+
         // Require Python 3.7+ for compatibility
         if (major >= 3 && minor >= 7) {
           console.debug(`[Terminal] Found Python: ${python} ${version}`);
           return {
             executable: python,
             version,
-            available: true
+            available: true,
           };
         }
       }
     } catch (error) {
       // Python executable not found or failed to run
-      console.debug(`[Terminal] Python candidate ${python} not available:`, error);
+      console.debug(
+        `[Terminal] Python candidate ${python} not available:`,
+        error
+      );
     }
   }
-  
+
   console.warn("[Terminal] No suitable Python installation found");
   return null;
 }
 
-export async function checkPythonDependencies(pythonExecutable: string): Promise<boolean> {
+export async function checkPythonDependencies(
+  pythonExecutable: string
+): Promise<boolean> {
   const isWindows = process.platform === "win32";
 
   // Windows needs pywinpty for ConPTY support, Unix needs pty (stdlib)
@@ -56,12 +69,15 @@ export async function checkPythonDependencies(pythonExecutable: string): Promise
     : `"import pty, selectors, sys; print('OK')"`;
 
   try {
-    const result = await execAsync(`${pythonExecutable} -c ${checkScript}`);
+    // Quote executable in case it contains spaces
+    const result = await execAsync(`"${pythonExecutable}" -c ${checkScript}`);
     return result.stdout.trim() === "OK";
   } catch (error) {
     console.warn("[Terminal] Python dependencies check failed:", error);
     if (isWindows) {
-      console.warn("[Terminal] On Windows, install pywinpty: pip install pywinpty");
+      console.warn(
+        "[Terminal] On Windows, install pywinpty: pip install pywinpty"
+      );
     }
     return false;
   }
@@ -73,12 +89,14 @@ export class PythonManager {
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    
+
     try {
       this.pythonInfo = await detectPython();
-      
+
       if (this.pythonInfo) {
-        const depsOk = await checkPythonDependencies(this.pythonInfo.executable);
+        const depsOk = await checkPythonDependencies(
+          this.pythonInfo.executable
+        );
         if (!depsOk) {
           console.warn("[Terminal] Python dependencies not available");
           this.pythonInfo = null;

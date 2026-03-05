@@ -4,6 +4,7 @@ import threading
 import time
 import subprocess
 
+
 def main():
     try:
         from winpty import PtyProcess
@@ -18,8 +19,14 @@ def main():
     cmd = subprocess.list2cmdline(args)
 
     # Get dimensions from environment or use defaults
-    cols = int(os.environ.get("TERM_COLS", "120"))
-    rows = int(os.environ.get("TERM_ROWS", "30"))
+    try:
+        cols = int(os.environ.get("TERM_COLS", "120"))
+    except (ValueError, TypeError):
+        cols = 120
+    try:
+        rows = int(os.environ.get("TERM_ROWS", "30"))
+    except (ValueError, TypeError):
+        rows = 30
 
     sys.stderr.write("[ConPTY] Starting: {} ({}x{})\n".format(cmd, cols, rows))
     sys.stderr.flush()
@@ -118,7 +125,15 @@ def main():
     # Small delay for any final output
     time.sleep(0.1)
 
+    # Ensure the ConPTY child process is terminated to prevent orphans
+    try:
+        if proc.isalive():
+            proc.terminate(force=True)
+    except Exception:
+        pass
+
     sys.exit(exit_code[0] if exit_code[0] is not None else 1)
+
 
 if __name__ == "__main__":
     main()
