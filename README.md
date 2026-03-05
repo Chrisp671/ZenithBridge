@@ -1,9 +1,13 @@
-# Obsidian Claude Code
+# obsidian-claude-code-mcp
+    
+    A Model Context Protocol (MCP) server that allows Claude to interact with Obsidian vaults.# Obsidian Claude Code
 
 An Obsidian plugin that integrates Claude Code with your vault. It provides an embedded terminal for running Claude Code directly inside Obsidian and an MCP (Model Context Protocol) server for connecting external Claude clients.
 
 ## Features
-
+# obsidian-claude-code-mcp
+    
+    A Model Context Protocol (MCP) server that allows Claude to interact with Obsidian vaults.
 -   **Embedded Terminal**: Run Claude Code inside Obsidian with full PTY support (Ctrl+` or command palette)
 -   **Windows ConPTY**: Real pseudo-terminal on Windows via Python's `pywinpty`
 -   **Unix PTY**: Native pseudo-terminal on macOS/Linux via Python's `pty` stdlib module
