@@ -420,11 +420,13 @@ export class ClaudeTerminalView extends ItemView {
 		xtermTextarea.setAttribute("aria-label", "Terminal input");
 		xtermTextarea.setAttribute("role", "textbox");
 
-		// Listen for beforeinput events that voice-to-text tools generate.
-		// These bypass xterm's normal keyboard event flow.
+		// Voice-to-text tools (VoiceDash, Wispr Flow, etc.) inject text through
+		// various mechanisms. We handle them all:
+		// 1. beforeinput - catches insertText/insertFromPaste before DOM changes
+		// 2. input - fallback for tools using document.execCommand('insertText')
+		let handledByBeforeInput = false;
+
 		xtermTextarea.addEventListener("beforeinput", (event: InputEvent) => {
-			// Only handle text insertions from non-keyboard sources
-			// (insertText from voice-to-text, insertFromPaste, insertFromDrop)
 			if (
 				event.inputType === "insertText" ||
 				event.inputType === "insertFromPaste" ||
@@ -441,10 +443,10 @@ export class ClaudeTerminalView extends ItemView {
 						composingElement.textContent &&
 						composingElement.textContent.length > 0
 					) {
-						return; // Let xterm's composition handler deal with it
+						return;
 					}
 
-					// Forward the text directly to the PTY
+					handledByBeforeInput = true;
 					this.pseudoterminal.shell
 						.then((shell) => {
 							if (shell?.stdin?.writable) {
@@ -461,7 +463,39 @@ export class ClaudeTerminalView extends ItemView {
 			}
 		});
 
-		console.debug("[Terminal] Voice-to-text support initialized");
+		// Fallback: catch text injected via execCommand or other methods
+		// that may not fire beforeinput in all environments
+		xtermTextarea.addEventListener("input", (event: Event) => {
+			if (handledByBeforeInput) {
+				handledByBeforeInput = false;
+				return;
+			}
+
+			const inputEvent = event as InputEvent;
+			if (
+				inputEvent.inputType === "insertText" ||
+				inputEvent.inputType === "insertFromPaste" ||
+				inputEvent.inputType === "insertFromDrop"
+			) {
+				const text = inputEvent.data;
+				if (text && this.pseudoterminal?.shell) {
+					this.pseudoterminal.shell
+						.then((shell) => {
+							if (shell?.stdin?.writable) {
+								shell.stdin.write(text);
+							}
+						})
+						.catch((error) => {
+							console.error(
+								"[Terminal] Failed to write voice-to-text input (fallback):",
+								error
+							);
+						});
+				}
+			}
+		});
+
+		console.debug("[Terminal] Voice-to-text support initialized (VoiceDash/Wispr compatible)");
 	}
 
 	public focusTerminal(): void {
