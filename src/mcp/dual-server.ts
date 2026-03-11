@@ -8,6 +8,7 @@ import { WorkspaceManager } from "../obsidian/workspace-manager";
 import { ToolRegistry } from "../shared/tool-registry";
 import { GeneralTools, GENERAL_TOOL_DEFINITIONS } from "../tools/general-tools";
 import { IdeTools, IDE_TOOL_DEFINITIONS } from "../ide/ide-tools";
+import { AutoresearchTools, AUTORESEARCH_TOOL_DEFINITIONS } from "../tools/autoresearch-tools";
 
 export interface DualServerConfig {
 	app: App;
@@ -79,6 +80,25 @@ export class McpDualServer {
 			
 			// Only register to WebSocket registry (IDE-specific)
 			this.wsToolRegistry.register(definition, implementation);
+		}
+
+		// Register autoresearch tools to BOTH registries
+		const autoresearchTools = new AutoresearchTools(this.config.app);
+		const autoresearchImplementations = autoresearchTools.createImplementations();
+
+		for (let i = 0; i < AUTORESEARCH_TOOL_DEFINITIONS.length; i++) {
+			const definition = AUTORESEARCH_TOOL_DEFINITIONS[i];
+			const implementation = autoresearchImplementations[i];
+
+			if (!implementation || definition.name !== implementation.name) {
+				throw new Error(
+					`Tool definition and implementation mismatch for ${definition.name}`
+				);
+			}
+
+			// Register to both WebSocket and HTTP registries
+			this.wsToolRegistry.register(definition, implementation);
+			this.httpToolRegistry.register(definition, implementation);
 		}
 
 		// Log registered tools for debugging
@@ -228,17 +248,19 @@ export class McpDualServer {
 		console.log("[McpDualServer] Tool validation:");
 		console.log("  WebSocket/IDE tools:", {
 			total: this.wsToolRegistry.getRegisteredToolNames().length,
-			general: this.wsToolRegistry.getToolDefinitions("general").length + 
-					 this.wsToolRegistry.getToolDefinitions("file").length + 
+			general: this.wsToolRegistry.getToolDefinitions("general").length +
+					 this.wsToolRegistry.getToolDefinitions("file").length +
 					 this.wsToolRegistry.getToolDefinitions("workspace").length,
 			ideSpecific: this.wsToolRegistry.getToolDefinitions("ide-specific").length,
+			autoresearch: this.wsToolRegistry.getToolDefinitions("autoresearch").length,
 		});
 		console.log("  HTTP/MCP tools:", {
 			total: this.httpToolRegistry.getRegisteredToolNames().length,
-			general: this.httpToolRegistry.getToolDefinitions("general").length + 
-					 this.httpToolRegistry.getToolDefinitions("file").length + 
+			general: this.httpToolRegistry.getToolDefinitions("general").length +
+					 this.httpToolRegistry.getToolDefinitions("file").length +
 					 this.httpToolRegistry.getToolDefinitions("workspace").length,
 			ideSpecific: this.httpToolRegistry.getToolDefinitions("ide-specific").length,
+			autoresearch: this.httpToolRegistry.getToolDefinitions("autoresearch").length,
 		});
 	}
 }
