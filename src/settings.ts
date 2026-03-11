@@ -259,8 +259,9 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 				cls: "status-details",
 			});
 			httpDetails.innerHTML = `
-				<div>• SSE Stream: <code>http://localhost:${serverInfo.httpPort}/sse</code></div>
-				<div>• Add to Claude Desktop config: <code>"url": "http://localhost:${serverInfo.httpPort}/sse"</code></div>
+				<div>• Streamable HTTP: <code>http://localhost:${serverInfo.httpPort}/mcp</code></div>
+				<div>• Add to Claude Desktop config: <code>"url": "http://localhost:${serverInfo.httpPort}/mcp"</code></div>
+				<div>• Legacy SSE: <code>http://localhost:${serverInfo.httpPort}/sse</code> (deprecated)</div>
 			`;
 		} else if (!this.plugin.settings.enableHttpServer) {
 			httpStatus.innerHTML = `

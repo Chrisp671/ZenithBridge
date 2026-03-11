@@ -95,7 +95,7 @@ Claude Desktop requires a special configuration to connect to the Obsidian MCP s
 
 ### Other MCP Clients (with direct HTTP support)
 
-If you are using an MCP client that directly supports the legacy "HTTP with SSE" transport, you can use a simpler configuration without the `mcp-remote` bridge.
+If you are using an MCP client that supports the Streamable HTTP transport (MCP 2025-03-26), you can use a simpler configuration without the `mcp-remote` bridge.
 
 **Example Configuration:**
 
@@ -103,12 +103,14 @@ If you are using an MCP client that directly supports the legacy "HTTP with SSE"
 {
 	"mcpServers": {
 		"obsidian": {
-			"url": "http://localhost:22360/sse",
+			"url": "http://localhost:22360/mcp",
 			"env": {}
 		}
 	}
 }
 ```
+
+> **Note:** The legacy SSE transport (`/sse` + `/messages`) is still available for older clients but is deprecated.
 
 ### Claude Code CLI
 
@@ -146,14 +148,9 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Multiple Vaults**: If you run multiple Obsidian vaults with this plugin, each vault needs a unique port. The plugin will automatically detect port conflicts and guide you to configure different ports.
 
-### A Note on MCP Specification Version
+### MCP Specification Version
 
-_As of 2025-06-09_
-
-> [!IMPORTANT]
-> This plugin intentionally uses an older MCP specification for HTTP transport. The latest ["Streamable HTTP" protocol (2025-03-26)](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) is not yet supported by most MCP clients, including Claude Code and Claude Desktop.
->
-> To ensure compatibility, we use the legacy ["HTTP with SSE" protocol (2024-11-05)](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse). Adhering to the newest specification will lead to connection failures with current tools.
+This plugin implements the [Streamable HTTP transport (MCP 2025-03-26)](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) at the `/mcp` endpoint. The legacy [HTTP with SSE transport (2024-11-05)](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse) remains available at `/sse` + `/messages` for backward compatibility.
 
 ## Configuration
 
@@ -164,8 +161,8 @@ Plugin settings are available under **Obsidian Settings** > **Community Plugins*
 | Setting | Default | Description |
 |---|---|---|
 | Enable WebSocket Server | On | WebSocket server for Claude Code CLI auto-discovery via lock files |
-| Enable HTTP/SSE Server | On | HTTP/SSE server for Claude Desktop and other MCP clients |
-| HTTP Server Port | 22360 | Port for the HTTP/SSE MCP server (1024-65535) |
+| Enable HTTP Server | On | Streamable HTTP server for Claude Desktop and other MCP clients |
+| HTTP Server Port | 22360 | Port for the HTTP MCP server (1024-65535) |
 
 ### Terminal Configuration
 

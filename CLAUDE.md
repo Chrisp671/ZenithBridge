@@ -23,7 +23,7 @@ This is an Obsidian plugin that implements MCP (Model Context Protocol) servers 
 - **src/mcp/** - MCP protocol implementation
   - **dual-server.ts** - Manages both WebSocket and HTTP servers with tool registry
   - **server.ts** - WebSocket server for Claude Code CLI integration
-  - **http-server.ts** - HTTP/SSE server for Claude Desktop (uses MCP spec 2024-11-05)
+  - **http-server.ts** - HTTP server for Claude Desktop (Streamable HTTP 2025-03-26 at /mcp, legacy SSE 2024-11-05 at /sse)
   - **handlers.ts** - Request routing with separation of IDE/MCP concerns
   - **types.ts** - TypeScript interfaces for MCP protocol
 - **src/ide/** - Claude Code IDE-specific functionality
@@ -124,7 +124,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - **Path Handling**: All paths normalized via `normalizePath()` utility
 - **Security**: File operations restricted to vault boundaries
 - **Multi-Vault Support**: Each vault needs unique HTTP port
-- **MCP Spec Version**: HTTP server uses 2024-11-05 spec for compatibility
+- **MCP Spec Version**: HTTP server supports Streamable HTTP (2025-03-26) at `/mcp` and legacy SSE (2024-11-05) at `/sse`
 
 ## Release Process
 

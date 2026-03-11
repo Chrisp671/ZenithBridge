@@ -122,19 +122,23 @@ export class McpHandlers {
 			const { protocolVersion, capabilities, clientInfo } =
 				req.params || {};
 
-			// Validate protocol version if provided
-			if (protocolVersion && protocolVersion !== "2024-11-05") {
-				console.warn(`[MCP] Client requested unsupported protocol version: ${protocolVersion}`);
-				// Still respond — the spec says server should return its own version
-				// and the client can decide whether to continue
+			// Negotiate protocol version
+			const supportedVersions = ["2025-03-26", "2024-11-05"];
+			let negotiatedVersion = "2025-03-26"; // default to latest
+			if (protocolVersion) {
+				if (supportedVersions.includes(protocolVersion)) {
+					negotiatedVersion = protocolVersion;
+				} else {
+					console.warn(`[MCP] Client requested unsupported protocol version: ${protocolVersion}, using ${negotiatedVersion}`);
+				}
 			}
 
-			console.debug(`[MCP] Client initialized: ${clientInfo?.name || "unknown"} (protocol: ${protocolVersion || "unspecified"})`);
+			console.debug(`[MCP] Client initialized: ${clientInfo?.name || "unknown"} (requested: ${protocolVersion || "unspecified"}, negotiated: ${negotiatedVersion})`);
 
 			// Respond with server capabilities
 			reply({
 				result: {
-					protocolVersion: "2024-11-05",
+					protocolVersion: negotiatedVersion,
 					capabilities: {
 						roots: {
 							listChanged: false,
