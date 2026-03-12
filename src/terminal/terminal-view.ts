@@ -422,27 +422,28 @@ export class ClaudeTerminalView extends ItemView {
 		}
 
 		const rawState = state as Partial<TerminalSessionState>;
+		const normalizedProfileId =
+			typeof rawState.profileId === "string" ? rawState.profileId.trim() : "";
 		const profileId =
-			typeof rawState.profileId === "string" && rawState.profileId.trim()
-				? rawState.profileId
-				: fallbackProfile?.id || BUILTIN_CLAUDE_PROFILE_ID;
+			normalizedProfileId || fallbackProfile?.id || BUILTIN_CLAUDE_PROFILE_ID;
 		const resolvedProfile =
 			this.plugin.getTerminalProfileById(profileId) || fallbackProfile;
 		const ordinal =
 			typeof rawState.ordinal === "number" && rawState.ordinal > 0
 				? Math.floor(rawState.ordinal)
 				: 1;
+		const normalizedSessionId =
+			typeof rawState.sessionId === "string" ? rawState.sessionId.trim() : "";
+		const normalizedDisplayName =
+			typeof rawState.displayName === "string"
+				? rawState.displayName.trim()
+				: "";
 
 		return {
-			sessionId:
-				typeof rawState.sessionId === "string" && rawState.sessionId.trim()
-					? rawState.sessionId
-					: `session-${Date.now().toString(36)}`,
+			sessionId: normalizedSessionId || `session-${Date.now().toString(36)}`,
 			profileId,
 			displayName:
-				typeof rawState.displayName === "string" && rawState.displayName.trim()
-					? rawState.displayName
-					: `${resolvedProfile?.name || "Terminal"} ${ordinal}`,
+				normalizedDisplayName || `${resolvedProfile?.name || "Terminal"} ${ordinal}`,
 			ordinal,
 		};
 	}
