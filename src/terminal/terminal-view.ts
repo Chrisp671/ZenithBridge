@@ -1,14 +1,25 @@
-import { ItemView, WorkspaceLeaf, Notice, App } from "obsidian";
+import {
+	App,
+	ItemView,
+	Notice,
+	ViewStateResult,
+	WorkspaceLeaf,
+} from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import {
+	ChildProcessPseudoterminal,
 	Pseudoterminal,
 	UnixPseudoterminal,
 	WindowsPseudoterminal,
-	ChildProcessPseudoterminal,
 } from "./pseudoterminal";
 import { PythonManager } from "./python-detection";
 import type ClaudeMcpPlugin from "main";
+import {
+	BUILTIN_CLAUDE_PROFILE_ID,
+	TerminalProfile,
+	TerminalSessionState,
+} from "./profiles";
 
 export const TERMINAL_VIEW_TYPE = "claude-terminal-view";
 
@@ -18,6 +29,12 @@ export class ClaudeTerminalView extends ItemView {
 	private pseudoterminal: Pseudoterminal | null = null;
 	private pythonManager = new PythonManager();
 	private isDestroyed = false;
+	private sessionState: TerminalSessionState = {
+		sessionId: "pending-session",
+		profileId: BUILTIN_CLAUDE_PROFILE_ID,
+		displayName: "Claude 1",
+		ordinal: 1,
+	};
 	public app: App;
 	private plugin: ClaudeMcpPlugin;
 
@@ -39,20 +56,35 @@ export class ClaudeTerminalView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Claude Terminal";
+		return this.sessionState.displayName;
 	}
 
 	getIcon(): string {
-		return "claude-logo";
+		return this.getResolvedProfile()?.icon || "terminal";
+	}
+
+	getState(): Record<string, unknown> {
+		return { ...this.sessionState };
+	}
+
+	async setState(state: unknown, _result: ViewStateResult): Promise<void> {
+		const previousSessionId = this.sessionState.sessionId;
+		this.sessionState = this.normalizeSessionState(state);
+
+		const terminalManager = this.plugin.getTerminalManager();
+		if (previousSessionId && previousSessionId !== this.sessionState.sessionId) {
+			terminalManager?.unregisterSession(previousSessionId);
+		}
+
+		terminalManager?.registerSessionLeaf(this.sessionState, this.leaf);
 	}
 
 	async onOpen(): Promise<void> {
-		console.debug("[Terminal] Opening terminal view");
+		console.debug("[Terminal] Opening terminal view", this.sessionState);
 
 		const container = this.containerEl.children[1];
 		container.empty();
 
-		// Create terminal container
 		const terminalEl = container.createDiv({
 			cls: "claude-terminal-container",
 		});
@@ -60,23 +92,20 @@ export class ClaudeTerminalView extends ItemView {
 		terminalEl.style.height = "100%";
 		terminalEl.style.padding = "8px";
 
-		// Open terminal in DOM
 		this.terminal.open(terminalEl);
+		this.plugin
+			.getTerminalManager()
+			?.registerSessionLeaf(this.sessionState, this.leaf);
+		this.plugin.getTerminalManager()?.markSessionActive(this.sessionState.sessionId);
 
-		// Initialize Python detection but defer shell start
 		await this.pythonManager.initialize();
-
-		// Set up shell process - now includes environment setup
 		await this.startShell();
 
-		// Add custom key handler for Shift+Enter to insert a newline
 		this.terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
-			// We only care about keydown events.
 			if (event.type !== "keydown") {
 				return true;
 			}
 
-			// Check for Shift+Enter without other modifiers
 			if (
 				event.key === "Enter" &&
 				event.shiftKey &&
@@ -84,12 +113,9 @@ export class ClaudeTerminalView extends ItemView {
 				!event.ctrlKey &&
 				!event.metaKey
 			) {
-				// Ensure we have a pseudoterminal with a shell property
 				if (this.pseudoterminal?.shell) {
-					// Prevent the default Enter behavior (sending \r)
 					event.preventDefault();
 
-					// Manually send a newline character to the PTY's stdin
 					this.pseudoterminal.shell
 						.then((shell) => {
 							if (shell?.stdin?.writable) {
@@ -103,45 +129,37 @@ export class ClaudeTerminalView extends ItemView {
 							);
 						});
 
-					// Stop xterm.js from processing the event further
 					return false;
 				}
 			}
 
-			// Allow xterm.js to process all other key events
 			return true;
 		});
 
-		// Set up terminal resizing
 		this.terminal.onResize(({ cols, rows }) => {
 			if (this.pseudoterminal?.resize) {
-				this.pseudoterminal
-					.resize(cols, rows)
-					.catch((error: unknown) => {
-						console.warn("[Terminal] Resize failed:", error);
-					});
+				this.pseudoterminal.resize(cols, rows).catch((error: unknown) => {
+					console.warn("[Terminal] Resize failed:", error);
+				});
 			}
 		});
 
-		// Fit terminal to container and focus after a brief delay
-		setTimeout(() => {
+		window.setTimeout(() => {
 			this.fitAddon.fit();
 			this.focusTerminal();
 		}, 100);
 	}
 
-	// Called when the view becomes active/visible
 	onShow(): void {
-		console.debug("[Terminal] Terminal view shown");
-		// Focus the terminal when the view becomes active
-		setTimeout(() => {
+		this.plugin.getTerminalManager()?.markSessionActive(this.sessionState.sessionId);
+		window.setTimeout(() => {
 			this.focusTerminal();
 		}, 50);
 	}
 
 	async onClose(): Promise<void> {
-		console.debug("[Terminal] Closing terminal view");
 		this.isDestroyed = true;
+		this.plugin.getTerminalManager()?.unregisterSession(this.sessionState.sessionId);
 
 		if (this.pseudoterminal) {
 			this.pseudoterminal.kill().catch((error: unknown) => {
@@ -160,7 +178,7 @@ export class ClaudeTerminalView extends ItemView {
 
 	onResize(): void {
 		if (this.fitAddon && !this.isDestroyed) {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				this.fitAddon.fit();
 			}, 100);
 		}
@@ -168,13 +186,11 @@ export class ClaudeTerminalView extends ItemView {
 
 	private async startShell(): Promise<void> {
 		try {
-			// Get vault root directory for PWD
 			const vaultPath =
 				(this.app.vault.adapter as any).basePath ||
 				(this.app.vault.adapter as any).getBasePath?.() ||
 				process.cwd();
 
-			// Determine shell command based on platform
 			const isWindows = process.platform === "win32";
 			const shell = isWindows
 				? "powershell.exe"
@@ -183,9 +199,10 @@ export class ClaudeTerminalView extends ItemView {
 
 			console.debug(`[Terminal] Starting shell: ${shell}`, args);
 			console.debug(`[Terminal] Working directory: ${vaultPath}`);
-			console.debug(`[Terminal] Python available: ${this.pythonManager.isAvailable()}`);
+			console.debug(
+				`[Terminal] Python available: ${this.pythonManager.isAvailable()}`
+			);
 
-			// Try Python PTY approach first (required for interactive TUI apps)
 			if (this.pythonManager.isAvailable()) {
 				try {
 					if (isWindows) {
@@ -201,11 +218,13 @@ export class ClaudeTerminalView extends ItemView {
 						"[Terminal] Python PTY failed, falling back to child_process:",
 						error
 					);
-					new Notice("Terminal: PTY not available. Install Python 3.7+ (Windows: also run 'pip install pywinpty') for full terminal support.", 8000);
+					new Notice(
+						"Terminal: PTY not available. Install Python 3.7+ (Windows: also run 'pip install pywinpty') for full terminal support.",
+						8000
+					);
 				}
 			}
 
-			// Fallback: use child_process (works on all platforms but no true PTY)
 			console.debug("[Terminal] Using child_process fallback");
 			await this.startChildProcess(shell, args, vaultPath);
 		} catch (error: any) {
@@ -227,22 +246,8 @@ export class ClaudeTerminalView extends ItemView {
 		});
 
 		await this.pseudoterminal.pipe(this.terminal);
-
-		this.pseudoterminal.onExit
-			.then((exitCode) => {
-				console.debug(`[Terminal] Shell exited with code ${exitCode}`);
-				if (!this.isDestroyed) {
-					this.terminal.write(
-						`\r\n\r\nShell exited with code ${exitCode}\r\n`
-					);
-				}
-			})
-			.catch((error: unknown) => {
-				console.error("[Terminal] Shell error:", error);
-			});
-
-		// Auto-launch startup command after a brief delay
-		setTimeout(() => this.launchStartupCommand(), 500);
+		this.attachExitHandler("Shell");
+		window.setTimeout(() => void this.launchStartupCommand(), 500);
 	}
 
 	private async startPythonPTY(
@@ -264,25 +269,9 @@ export class ClaudeTerminalView extends ItemView {
 			env: this.getTerminalEnv(),
 		});
 
-		// Pipe pseudoterminal to xterm
 		await this.pseudoterminal.pipe(this.terminal);
-
-		// Handle exit
-		this.pseudoterminal.onExit
-			.then((exitCode) => {
-				console.debug(`[Terminal] PTY exited with code ${exitCode}`);
-				if (!this.isDestroyed) {
-					this.terminal.write(
-						`\r\n\r\nShell exited with code ${exitCode}\r\n`
-					);
-				}
-			})
-			.catch((error: unknown) => {
-				console.error("[Terminal] PTY error:", error);
-			});
-
-		// Auto-launch startup command after a brief delay
-		setTimeout(() => this.launchStartupCommand(), 100);
+		this.attachExitHandler("PTY");
+		window.setTimeout(() => void this.launchStartupCommand(), 100);
 	}
 
 	private async startWindowsPTY(
@@ -295,9 +284,6 @@ export class ClaudeTerminalView extends ItemView {
 			throw new Error("Python executable not available");
 		}
 
-		console.debug(`[Terminal] Windows ConPTY: python=${pythonExecutable}, shell=${shell}, args=${args}`);
-
-		// Pass terminal dimensions via environment so ConPTY starts with correct size
 		const env = this.getTerminalEnv();
 		env["TERM_COLS"] = String(this.terminal.cols || 120);
 		env["TERM_ROWS"] = String(this.terminal.rows || 30);
@@ -311,102 +297,154 @@ export class ClaudeTerminalView extends ItemView {
 			env,
 		});
 
-		// Pipe pseudoterminal to xterm
 		await this.pseudoterminal.pipe(this.terminal);
+		this.attachExitHandler("Windows PTY");
+		window.setTimeout(() => void this.launchStartupCommand(), 1500);
+	}
 
-		// Handle exit
-		this.pseudoterminal.onExit
+	private attachExitHandler(label: string): void {
+		this.pseudoterminal?.onExit
 			.then((exitCode) => {
-				console.debug(`[Terminal] Windows PTY exited with code ${exitCode}`);
-				if (!this.isDestroyed) {
-					this.terminal.write(
-						`\r\n\r\nShell exited with code ${exitCode}\r\n`
-					);
+				console.debug(`[Terminal] ${label} exited with code ${exitCode}`);
+				if (this.isDestroyed) {
+					return;
 				}
+
+				if (this.plugin.settings.autoCloseTerminalOnShellExit) {
+					window.setTimeout(() => this.leaf.detach(), 0);
+					return;
+				}
+
+				this.terminal.write(`\r\n\r\nShell exited with code ${exitCode}\r\n`);
 			})
 			.catch((error: unknown) => {
-				console.error("[Terminal] Windows PTY error:", error);
+				console.error(`[Terminal] ${label} error:`, error);
 			});
-
-		// Auto-launch startup command after shell initializes
-		// Give PowerShell enough time to start inside the ConPTY
-		setTimeout(() => this.launchStartupCommand(), 1500);
 	}
 
 	private getTerminalEnv(): NodeJS.ProcessEnv {
+		const profile = this.getResolvedProfile();
 		return {
 			...process.env,
+			...this.getProfileBaseEnv(profile),
+			...profile?.env,
+		};
+	}
 
-			// These are just taken from the nvim plugin: https://github.com/coder/claudecode.nvim/blob/c1cdcd5a61d5a18f262d5c8c53929e3a27cb7821/lua/claudecode/terminal.lua#L346
-			// Since none of this is officially documented it may change.
+	private getProfileBaseEnv(profile?: TerminalProfile): NodeJS.ProcessEnv {
+		if (!profile || profile.envStrategy !== "claude-code") {
+			return {};
+		}
+
+		return {
 			CLAUDE_CODE_SSE_PORT: process.env.CLAUDE_CODE_SSE_PORT || "",
 			ENABLE_IDE_INTEGRATION:
 				process.env.ENABLE_IDE_INTEGRATION || "true",
 			FORCE_CODE_TERMINAL: "true",
-
 			TERM_PROGRAM: "obsidian-claude-terminal",
 			TERM_PROGRAM_VERSION: "1.0.0",
 			VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE || "",
 			VSCODE_GIT_ASKPASS_EXTRA_ARGS:
 				process.env.VSCODE_GIT_ASKPASS_EXTRA_ARGS || "",
-
 			CLAUDE_CODE_IDE_INTEGRATION: "obsidian",
 			CLAUDE_CODE_INTEGRATED_TERMINAL: "true",
 		};
 	}
 
-	/**
-	 * Sends the configured startup command to the running shell.
-	 * Used by all PTY modes (Unix, Windows ConPTY, and child_process fallback).
-	 */
 	private async launchStartupCommand(): Promise<void> {
-		if (!this.isDestroyed && this.pseudoterminal) {
-			const startupCommand = this.plugin.settings.startupCommand.trim();
+		if (this.isDestroyed || !this.pseudoterminal) {
+			return;
+		}
 
-			// Skip if no startup command is configured
-			if (!startupCommand) {
-				console.debug(
-					"[Terminal] Startup command is empty, skipping auto-launch"
-				);
-				return;
-			}
-
+		const startupCommand = this.getResolvedProfile()?.launchCommand.trim() || "";
+		if (!startupCommand) {
 			console.debug(
-				`[Terminal] Auto-launching startup command: ${startupCommand}`
+				"[Terminal] Startup command is empty, skipping auto-launch"
 			);
-			try {
-				const shell = await this.pseudoterminal.shell;
-				if (shell && shell.stdin && !shell.stdin.destroyed) {
-					// Use \r (carriage return) as that's the correct terminal Enter key
-					shell.stdin.write(`${startupCommand}\r`);
-				}
-			} catch (error) {
-				console.warn(
-					"[Terminal] Failed to auto-launch startup command:",
-					error
-				);
+			return;
+		}
+
+		try {
+			const shell = await this.pseudoterminal.shell;
+			if (shell?.stdin && !shell.stdin.destroyed) {
+				shell.stdin.write(`${startupCommand}\r`);
 			}
+		} catch (error) {
+			console.warn(
+				"[Terminal] Failed to auto-launch startup command:",
+				error
+			);
 		}
 	}
 
 	public focusTerminal(): void {
+		this.plugin.getTerminalManager()?.markSessionActive(this.sessionState.sessionId);
 		if (this.terminal && !this.isDestroyed) {
-			// Ensure the terminal is properly loaded and visible
 			if (
 				this.containerEl.isConnected &&
 				this.containerEl.offsetParent !== null
 			) {
 				this.terminal.focus();
-				console.debug("[Terminal] Terminal focused");
 			} else {
-				// Retry focus after a short delay if terminal isn't ready
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (this.terminal && !this.isDestroyed) {
 						this.terminal.focus();
-						console.debug("[Terminal] Terminal focused (delayed)");
 					}
 				}, 100);
 			}
 		}
+	}
+
+	private getResolvedProfile(): TerminalProfile | undefined {
+		return (
+			this.plugin.getTerminalProfileById(this.sessionState.profileId) ||
+			this.plugin.getTerminalProfileById(BUILTIN_CLAUDE_PROFILE_ID) ||
+			this.plugin.getTerminalProfiles()[0]
+		);
+	}
+
+	private normalizeSessionState(state: unknown): TerminalSessionState {
+		const fallbackProfile =
+			this.plugin.getTerminalProfileById(BUILTIN_CLAUDE_PROFILE_ID) ||
+			this.plugin.getTerminalProfiles()[0];
+
+		const fallbackDisplayName = fallbackProfile
+			? `${fallbackProfile.name} 1`
+			: "Terminal 1";
+
+		if (!state || typeof state !== "object") {
+			return {
+				sessionId: `session-${Date.now().toString(36)}`,
+				profileId: fallbackProfile?.id || BUILTIN_CLAUDE_PROFILE_ID,
+				displayName: fallbackDisplayName,
+				ordinal: 1,
+			};
+		}
+
+		const rawState = state as Partial<TerminalSessionState>;
+		const normalizedProfileId =
+			typeof rawState.profileId === "string" ? rawState.profileId.trim() : "";
+		const profileId =
+			normalizedProfileId || fallbackProfile?.id || BUILTIN_CLAUDE_PROFILE_ID;
+		const resolvedProfile =
+			this.plugin.getTerminalProfileById(profileId) || fallbackProfile;
+		const ordinal =
+			typeof rawState.ordinal === "number" && rawState.ordinal > 0
+				? Math.floor(rawState.ordinal)
+				: 1;
+		const normalizedSessionId =
+			typeof rawState.sessionId === "string" ? rawState.sessionId.trim() : "";
+		const normalizedDisplayName =
+			typeof rawState.displayName === "string"
+				? rawState.displayName.trim()
+				: "";
+
+		return {
+			sessionId: normalizedSessionId || `session-${Date.now().toString(36)}`,
+			profileId,
+			displayName:
+				normalizedDisplayName || `${resolvedProfile?.name || "Terminal"} ${ordinal}`,
+			ordinal,
+		};
 	}
 }

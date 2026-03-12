@@ -4,21 +4,28 @@
  * 1. `npm i ws node-pty @types/ws @types/node --save`
  * 2. Compile with the normal Obsidian plugin build pipeline
  **********************************************************************/
-import { Plugin, Notice, WorkspaceLeaf, addIcon } from "obsidian";
+import { Plugin, Notice, addIcon } from "obsidian";
 import { McpDualServer } from "./src/mcp/dual-server";
 import { WorkspaceManager } from "./src/obsidian/workspace-manager";
 import {
 	ClaudeCodeSettings,
-	DEFAULT_SETTINGS,
 	ClaudeCodeSettingTab,
+	migrateClaudeCodeSettings,
 } from "./src/settings";
 import claudeLogo from "./assets/claude-logo.png";
+import { TerminalManager } from "./src/terminal/terminal-manager";
+import {
+	TerminalProfile,
+	getTerminalProfileById,
+	getTerminalProfiles,
+} from "./src/terminal/profiles";
 
 export default class ClaudeMcpPlugin extends Plugin {
 	public mcpServer!: McpDualServer;
 	private workspaceManager!: WorkspaceManager;
 	public settings!: ClaudeCodeSettings;
 	private terminalRibbonIcon: HTMLElement | null = null;
+	private terminalManager: TerminalManager | null = null;
 
 	/* ---------------- core lifecycle ---------------- */
 
@@ -56,6 +63,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 	}
 
 	onunload() {
+		this.terminalManager?.closeAllTerminalLeaves();
 		this.mcpServer?.stop();
 		this.removeTerminalRibbonIcon();
 	}
@@ -107,7 +115,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 					`Port ${this.settings.mcpHttpPort} is already in use. This might be because:\n` +
 						`• Another Obsidian vault is running this plugin\n` +
 						`• Another application is using this port\n\n` +
-						`Please configure a different port in Settings → Community Plugins → Claude Code.`,
+						`Please configure a different port in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
 					10000
 				);
 			} else if (
@@ -116,7 +124,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
-						`Try using a port above 1024 in Settings → Community Plugins → Claude Code.`,
+						`Try using a port above 1024 in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
 					8000
 				);
 			} else {
@@ -153,7 +161,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 					`Port ${this.settings.mcpHttpPort} is already in use. This might be because:\n` +
 						`• Another Obsidian vault is running this plugin\n` +
 						`• Another application is using this port\n\n` +
-						`Please configure a different port in Settings → Community Plugins → Claude Code.`,
+						`Please configure a different port in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
 					10000
 				);
 			} else if (
@@ -162,7 +170,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
-						`Try using a port above 1024 in Settings → Community Plugins → Claude Code.`,
+						`Try using a port above 1024 in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
 					8000
 				);
 			} else {
@@ -180,9 +188,9 @@ export default class ClaudeMcpPlugin extends Plugin {
 		if (!this.terminalRibbonIcon) {
 			this.terminalRibbonIcon = this.addRibbonIcon(
 				"claude-logo",
-				"Toggle Claude Terminal",
+				"Open or Focus Default Terminal",
 				() => {
-					this.toggleClaudeTerminal();
+					void this.focusOrCreateTerminal();
 				}
 			);
 		}
@@ -197,6 +205,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 
 	private async initializeTerminalFeatures(): Promise<void> {
 		try {
+			this.terminalManager = new TerminalManager(this);
+
 			// Dynamic import to avoid loading terminal code when not needed
 			const { ClaudeTerminalView, TERMINAL_VIEW_TYPE } = await import(
 				"./src/terminal/terminal-view"
@@ -214,9 +224,21 @@ export default class ClaudeMcpPlugin extends Plugin {
 			// Register commands
 			this.addCommand({
 				id: "toggle-claude-terminal",
-				name: "Toggle Claude Terminal",
-				callback: () => this.toggleClaudeTerminal(),
+				name: "Open or Focus Default Terminal",
+				callback: () => void this.focusOrCreateTerminal(),
 				hotkeys: [{ modifiers: ["Ctrl"], key: "`" }],
+			});
+
+			this.addCommand({
+				id: "new-default-agent-terminal",
+				name: "New Default Agent Terminal",
+				callback: () => void this.openDefaultTerminal(),
+			});
+
+			this.addCommand({
+				id: "new-agent-terminal",
+				name: "New Agent Terminal...",
+				callback: () => this.openTerminalPicker(),
 			});
 		} catch (error) {
 			console.error(
@@ -227,75 +249,70 @@ export default class ClaudeMcpPlugin extends Plugin {
 		}
 	}
 
-	private async toggleClaudeTerminal(): Promise<void> {
+	public async focusOrCreateTerminal(): Promise<void> {
+		if (!this.ensureEmbeddedTerminalEnabled()) {
+			return;
+		}
+
 		try {
-			// Check if terminal is enabled
-			if (!this.settings.enableEmbeddedTerminal) {
-				new Notice(
-					"Embedded terminal is disabled. Enable it in settings to use this feature."
-				);
-				return;
-			}
-
-			// Dynamic import to get terminal constants
-			const { ClaudeTerminalView, TERMINAL_VIEW_TYPE } = await import(
-				"./src/terminal/terminal-view"
-			);
-
-			// Check if terminal is already open
-			const existingLeaf =
-				this.app.workspace.getLeavesOfType(TERMINAL_VIEW_TYPE)[0];
-			if (existingLeaf) {
-				// Check if the terminal leaf is currently active
-				const isActive = this.app.workspace.activeLeaf === existingLeaf;
-				if (isActive) {
-					// Terminal is active - close it
-					existingLeaf.detach();
-					return;
-				} else {
-					// Terminal exists but isn't active - focus it
-					this.app.workspace.revealLeaf(existingLeaf);
-					setTimeout(() => {
-						const terminalView = existingLeaf.view;
-						if (
-							terminalView &&
-							typeof (terminalView as any).focusTerminal ===
-								"function"
-						) {
-							(terminalView as any).focusTerminal();
-						}
-					}, 50);
-					return;
-				}
-			}
-
-			// Create new terminal
-			const leaf = this.app.workspace.getLeaf("split");
-			await leaf.setViewState({ type: TERMINAL_VIEW_TYPE });
-			this.app.workspace.revealLeaf(leaf);
-
-			// Focus the terminal after a brief delay to ensure it's ready
-			setTimeout(() => {
-				const terminalView = leaf.view;
-				if (
-					terminalView &&
-					typeof (terminalView as any).focusTerminal === "function"
-				) {
-					(terminalView as any).focusTerminal();
-				}
-			}, 150);
+			await this.terminalManager?.focusOrCreateTerminal();
 		} catch (error) {
-			console.error("[Terminal] Failed to toggle terminal:", error);
-			new Notice("Failed to toggle Claude Terminal");
+			console.error("[Terminal] Failed to focus or create terminal:", error);
+			new Notice("Failed to open the default terminal");
 		}
 	}
 
+	public async openDefaultTerminal(): Promise<void> {
+		if (!this.ensureEmbeddedTerminalEnabled()) {
+			return;
+		}
+
+		try {
+			await this.terminalManager?.openDefaultTerminal();
+		} catch (error) {
+			console.error("[Terminal] Failed to open default terminal:", error);
+			new Notice("Failed to open the default terminal");
+		}
+	}
+
+	public openTerminalPicker(): void {
+		if (!this.ensureEmbeddedTerminalEnabled()) {
+			return;
+		}
+
+		this.terminalManager?.openTerminalPicker();
+	}
+
+	public getTerminalProfiles(): TerminalProfile[] {
+		return getTerminalProfiles(this.settings.terminalProfiles);
+	}
+
+	public getTerminalProfileById(profileId: string): TerminalProfile | undefined {
+		return getTerminalProfileById(this.settings.terminalProfiles, profileId);
+	}
+
+	public getTerminalManager(): TerminalManager | null {
+		return this.terminalManager;
+	}
+
+	private ensureEmbeddedTerminalEnabled(): boolean {
+		if (!this.settings.enableEmbeddedTerminal) {
+			new Notice(
+				"Embedded terminal is disabled. Enable it in settings to use this feature."
+			);
+			return false;
+		}
+
+		if (!this.terminalManager) {
+			new Notice("Terminal features are not initialized.");
+			return false;
+		}
+
+		return true;
+	}
+
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
+		this.settings = migrateClaudeCodeSettings(await this.loadData());
 	}
 
 	async saveSettings() {

@@ -1,14 +1,21 @@
-# obsidian-claude-code-mcp
-    
-    A Model Context Protocol (MCP) server that allows Claude to interact with Obsidian vaults.# Obsidian Claude Code
+# Obsidian Claude Code MCP (Chrisp671 Fork)
 
 An Obsidian plugin that integrates Claude Code with your vault. It provides an embedded terminal for running Claude Code directly inside Obsidian and an MCP (Model Context Protocol) server for connecting external Claude clients.
 
+This repository is the `Chrisp671` fork of the original project by `iansinnott`. The fork uses its own plugin id, `claude-code-mcp-chrisp671`, so it can be distributed without colliding with upstream installs.
+
+## Attribution
+
+This fork is maintained by `Chrisp671`.
+
+Workflow and template inspiration for this setup come from Rich Schefren, the Zenith program, and Strategic Profits. Credit for that influence belongs to them.
+
+This project is not presented as an official Rich Schefren, Zenith, or Strategic Profits product, and no affiliation or endorsement is implied.
+
 ## Features
-# obsidian-claude-code-mcp
-    
-    A Model Context Protocol (MCP) server that allows Claude to interact with Obsidian vaults.
 -   **Embedded Terminal**: Run Claude Code inside Obsidian with full PTY support (Ctrl+` or command palette)
+-   **Multiple Terminal Sessions**: Open several agent terminals at once using native Obsidian panes
+-   **Terminal Profiles**: Use a default Claude preset or create custom profiles for tools like Kimi or Codex
 -   **Windows ConPTY**: Real pseudo-terminal on Windows via Python's `pywinpty`
 -   **Unix PTY**: Native pseudo-terminal on macOS/Linux via Python's `pty` stdlib module
 -   **Fallback Mode**: Basic `child_process` terminal if Python is not available
@@ -46,10 +53,11 @@ The plugin includes a built-in terminal that runs directly inside Obsidian.
 **Opening the terminal:**
 
 -   Press `Ctrl+`` (backtick)
--   Or use the command palette: "Open Claude Terminal"
+-   Or use the command palette: "Open or Focus Default Terminal"
+-   Or use the command palette: "New Agent Terminal..."
 -   Or click the Claude icon in the ribbon sidebar
 
-When the terminal opens, it launches your platform's default shell (PowerShell on Windows, `$SHELL` on Unix) with the working directory set to your vault root. If a startup command is configured (default: `claude`), it runs automatically.
+Each session launches your platform's default shell (PowerShell on Windows, `$SHELL` on Unix) with the working directory set to your vault root. The selected terminal profile then runs its launch command automatically. The built-in default profile is `Claude`, and you can add custom profiles for other tools later.
 
 **PTY mode selection** (automatic):
 
@@ -128,7 +136,7 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Custom Port Setup:**
 
-1.  Go to **Obsidian Settings** > **Community Plugins** > **Claude Code** > **Settings**
+1.  Go to **Obsidian Settings** > **Community Plugins** > **Claude Code MCP (Chrisp671)** > **Settings**
 2.  Change the **"HTTP Server Port"** in the MCP Server Configuration section
 3.  **Update your Claude Desktop config** to use the new port:
     ```json
@@ -157,7 +165,7 @@ _As of 2025-06-09_
 
 ## Configuration
 
-Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Claude Code**.
+Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Claude Code MCP (Chrisp671)**.
 
 ### MCP Server Configuration
 
@@ -172,8 +180,10 @@ Plugin settings are available under **Obsidian Settings** > **Community Plugins*
 | Setting | Default | Description |
 |---|---|---|
 | Enable Embedded Terminal | On | Enable/disable the built-in terminal. Requires plugin reload. |
-| Auto-close terminal on Claude exit | On | Close the terminal view when the Claude process exits |
-| Startup command | `claude` | Command to run when the terminal opens. Leave empty to disable auto-launch. |
+| Auto-close terminal on shell exit | On | Close the terminal view when the shell process exits |
+| Max terminal sessions | `4` | Maximum number of concurrent embedded terminal sessions |
+| Default terminal profile | `Claude` | Profile used by the ribbon button and default terminal command |
+| Terminal profiles | Built-in Claude preset + custom profiles | Launch commands and environment variables for each terminal profile |
 
 ## Troubleshooting
 

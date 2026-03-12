@@ -1,10 +1,10 @@
 {
-	"id": "claude-code-mcp",
-	"name": "Claude Code MCP",
+	"id": "claude-code-mcp-chrisp671",
+	"name": "Claude Code MCP (Chrisp671)",
 	"minAppVersion": "1.0.0",
 	"version": "1.2.0",
 	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
-	"author": "iansinnott",
-	"authorUrl": "https://github.com/iansinnott",
+	"author": "Chrisp671",
+	"authorUrl": "https://github.com/Chrisp671",
 	"isDesktopOnly": true
 }

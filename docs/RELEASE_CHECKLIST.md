@@ -124,12 +124,12 @@ This checklist ensures the plugin meets all requirements for Obsidian community 
 -   [ ] Fork `obsidianmd/obsidian-releases` repository
 -   [ ] Add plugin entry to `community-plugins.json`:
     ```json
-    {
-    	"id": "claude-code-mcp",
-    	"name": "Claude Code MCP",
-    	"author": "iansinnott",
+     {
+    	"id": "claude-code-mcp-chrisp671",
+    	"name": "Claude Code MCP (Chrisp671)",
+    	"author": "Chrisp671",
     	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
-    	"repo": "iansinnott/obsidian-claude-code-mcp"
+    	"repo": "Chrisp671/obsidian-claude-code-mcp"
     }
     ```
 -   [ ] Verify JSON syntax is valid
@@ -172,7 +172,7 @@ This checklist ensures the plugin meets all requirements for Obsidian community 
 
 ## Notes
 
--   **Repository Name vs Plugin ID**: The repository is named `obsidian-claude-code-mcp` while the plugin ID is `claude-code-mcp`. This is intentional and clearly documented.
+-   **Repository Name vs Plugin ID**: The repository is named `obsidian-claude-code-mcp` while the plugin ID is `claude-code-mcp-chrisp671`. This is intentional and clearly documented.
 -   **Desktop Only**: This plugin requires desktop-specific features (WebSocket servers, terminal access) and is properly marked as desktop-only.
 -   **External Dependencies**: The plugin bundles all necessary dependencies and doesn't require users to install additional software beyond Claude Code or Claude Desktop.
 -   **Multiple Vaults**: The plugin supports multiple vaults by using different ports, with automatic conflict detection and resolution guidance.

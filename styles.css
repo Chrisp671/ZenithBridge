@@ -380,3 +380,36 @@
 	font-size: 12px;
 	padding: 6px 12px;
 }
+
+.terminal-profile-card {
+	margin-bottom: 12px;
+	padding: 12px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.terminal-profile-card .setting-item {
+	border-top: none;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+
+.terminal-profile-card .setting-item:first-child {
+	padding-top: 0;
+}
+
+.terminal-profile-card .setting-item:last-child {
+	padding-bottom: 0;
+}
+
+.terminal-profile-card textarea {
+	min-height: 88px;
+	font-family: var(--font-monospace);
+}
+
+.terminal-profile-empty {
+	margin-top: 0;
+	margin-bottom: 12px;
+	color: var(--text-muted);
+}

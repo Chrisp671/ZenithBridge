@@ -1,6 +1,6 @@
 # Community Plugin Submission Guide
 
-This document provides step-by-step instructions for submitting the Claude Code Editor & MCP plugin to the Obsidian Community Plugin Directory.
+This document provides step-by-step instructions for submitting the Chrisp671 fork of the Claude Code Editor & MCP plugin to the Obsidian Community Plugin Directory.
 
 ## Plugin Information
 
@@ -8,11 +8,11 @@ This document provides step-by-step instructions for submitting the Claude Code 
 
 ```json
 {
-	"id": "claude-code-mcp",
-	"name": "Claude Code MCP",
-	"author": "iansinnott",
+	"id": "claude-code-mcp-chrisp671",
+	"name": "Claude Code MCP (Chrisp671)",
+	"author": "Chrisp671",
 	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
-	"repo": "iansinnott/obsidian-claude-code-mcp"
+	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
 
@@ -20,7 +20,7 @@ This document provides step-by-step instructions for submitting the Claude Code 
 
 ### 1. Prepare Repository
 
--   [x] Repository is public: `https://github.com/iansinnott/obsidian-claude-code-mcp`
+-   [x] Repository is public: `https://github.com/Chrisp671/obsidian-claude-code-mcp`
 -   [x] All required files are present and valid
 -   [x] Latest release is created with proper artifacts
 -   [x] Documentation is comprehensive and user-friendly
@@ -56,11 +56,11 @@ bun run build
 
 ```json
 {
-	"id": "claude-code-mcp",
-	"name": "Claude Code MCP",
-	"author": "iansinnott",
+	"id": "claude-code-mcp-chrisp671",
+	"name": "Claude Code MCP (Chrisp671)",
+	"author": "Chrisp671",
 	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
-	"repo": "iansinnott/obsidian-claude-code-mcp"
+	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
 
@@ -72,25 +72,25 @@ jq . community-plugins.json
 
 ### 5. Submit Pull Request
 
-1. Create a new branch: `git checkout -b add-claude-code-mcp`
-2. Commit changes: `git commit -m "Add Claude Code Editor & MCP plugin"`
-3. Push to your fork: `git push origin add-claude-code-mcp`
+1. Create a new branch: `git checkout -b add-claude-code-mcp-chrisp671`
+2. Commit changes: `git commit -m "Add Claude Code MCP (Chrisp671) plugin"`
+3. Push to your fork: `git push origin add-claude-code-mcp-chrisp671`
 4. Open pull request on the main obsidian-releases repository
 
 ### 6. Pull Request Details
 
-**Title:** `Add Claude Code MCP plugin`
+**Title:** `Add Claude Code MCP (Chrisp671) plugin`
 
 **Description:**
 
 ```markdown
-# Claude Code MCP Plugin Submission
+# Claude Code MCP (Chrisp671) Plugin Submission
 
 ## Plugin Information
 
--   **Name:** Claude Code MCP
--   **Author:** iansinnott
--   **Repository:** https://github.com/iansinnott/obsidian-claude-code-mcp
+-   **Name:** Claude Code MCP (Chrisp671)
+-   **Author:** Chrisp671
+-   **Repository:** https://github.com/Chrisp671/obsidian-claude-code-mcp
 -   **Latest Release:** v1.1.3
 
 ## Description
@@ -178,7 +178,7 @@ The plugin repository demonstrates:
 
 ## Notes
 
--   The plugin ID `claude-code-mcp` differs from repository name `obsidian-claude-code-mcp` - this is intentional and documented
+-   The plugin ID `claude-code-mcp-chrisp671` differs from repository name `obsidian-claude-code-mcp` - this is intentional and documented
 -   Plugin requires desktop-only features (WebSocket servers) and is properly marked
 -   All dependencies are bundled - users don't need to install additional software
 -   Supports multiple vault configurations through port management
