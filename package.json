@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-claude-code-mcp-chrisp671",
-	"version": "1.2.0",
-	"description": "Use Claude Code within your notes.",
+	"version": "1.2.1",
+	"description": "Run AI agent terminals in Obsidian and connect your vault through MCP.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

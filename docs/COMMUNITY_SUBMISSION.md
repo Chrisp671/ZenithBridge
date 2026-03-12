@@ -9,9 +9,9 @@ This document provides step-by-step instructions for submitting the Chrisp671 fo
 ```json
 {
 	"id": "claude-code-mcp-chrisp671",
-	"name": "Claude Code MCP (Chrisp671)",
+	"name": "Obsidian Agent Terminal MCP",
 	"author": "Chrisp671",
-	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
+	"description": "Run AI agent terminals in Obsidian and connect your vault to external tools through Model Context Protocol (MCP).",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -57,9 +57,9 @@ bun run build
 ```json
 {
 	"id": "claude-code-mcp-chrisp671",
-	"name": "Claude Code MCP (Chrisp671)",
+	"name": "Obsidian Agent Terminal MCP",
 	"author": "Chrisp671",
-	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
+	"description": "Run AI agent terminals in Obsidian and connect your vault to external tools through Model Context Protocol (MCP).",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -72,23 +72,23 @@ jq . community-plugins.json
 
 ### 5. Submit Pull Request
 
-1. Create a new branch: `git checkout -b add-claude-code-mcp-chrisp671`
-2. Commit changes: `git commit -m "Add Claude Code MCP (Chrisp671) plugin"`
-3. Push to your fork: `git push origin add-claude-code-mcp-chrisp671`
+1. Create a new branch: `git checkout -b add-obsidian-agent-terminal-mcp`
+2. Commit changes: `git commit -m "Add Obsidian Agent Terminal MCP plugin"`
+3. Push to your fork: `git push origin add-obsidian-agent-terminal-mcp`
 4. Open pull request on the main obsidian-releases repository
 
 ### 6. Pull Request Details
 
-**Title:** `Add Claude Code MCP (Chrisp671) plugin`
+**Title:** `Add Obsidian Agent Terminal MCP plugin`
 
 **Description:**
 
 ```markdown
-# Claude Code MCP (Chrisp671) Plugin Submission
+# Obsidian Agent Terminal MCP Plugin Submission
 
 ## Plugin Information
 
--   **Name:** Claude Code MCP (Chrisp671)
+-   **Name:** Obsidian Agent Terminal MCP
 -   **Author:** Chrisp671
 -   **Repository:** https://github.com/Chrisp671/obsidian-claude-code-mcp
 -   **Latest Release:** v1.1.3

@@ -126,9 +126,9 @@ This checklist ensures the plugin meets all requirements for Obsidian community 
     ```json
      {
     	"id": "claude-code-mcp-chrisp671",
-    	"name": "Claude Code MCP (Chrisp671)",
+    	"name": "Obsidian Agent Terminal MCP",
     	"author": "Chrisp671",
-    	"description": "Connect Claude Code and other AI tools to your notes using Model Context Protocol (MCP).",
+    	"description": "Run AI agent terminals in Obsidian and connect your vault to external tools through Model Context Protocol (MCP).",
     	"repo": "Chrisp671/obsidian-claude-code-mcp"
     }
     ```

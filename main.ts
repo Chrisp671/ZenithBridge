@@ -115,7 +115,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 					`Port ${this.settings.mcpHttpPort} is already in use. This might be because:\n` +
 						`• Another Obsidian vault is running this plugin\n` +
 						`• Another application is using this port\n\n` +
-						`Please configure a different port in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
+						`Please configure a different port in Settings → Community Plugins → Obsidian Agent Terminal MCP.`,
 					10000
 				);
 			} else if (
@@ -124,7 +124,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
-						`Try using a port above 1024 in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
+						`Try using a port above 1024 in Settings → Community Plugins → Obsidian Agent Terminal MCP.`,
 					8000
 				);
 			} else {
@@ -161,7 +161,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 					`Port ${this.settings.mcpHttpPort} is already in use. This might be because:\n` +
 						`• Another Obsidian vault is running this plugin\n` +
 						`• Another application is using this port\n\n` +
-						`Please configure a different port in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
+						`Please configure a different port in Settings → Community Plugins → Obsidian Agent Terminal MCP.`,
 					10000
 				);
 			} else if (
@@ -170,7 +170,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
-						`Try using a port above 1024 in Settings → Community Plugins → Claude Code MCP (Chrisp671).`,
+						`Try using a port above 1024 in Settings → Community Plugins → Obsidian Agent Terminal MCP.`,
 					8000
 				);
 			} else {

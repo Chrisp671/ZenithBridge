@@ -142,7 +142,7 @@ export class McpHandlers {
 						},
 					},
 					serverInfo: {
-						name: "obsidian-claude-code-mcp-chrisp671",
+						name: "obsidian-agent-terminal-mcp-chrisp671",
 						version: "1.0.0",
 					},
 				},

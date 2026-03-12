@@ -1,6 +1,6 @@
-# Obsidian Claude Code MCP (Chrisp671 Fork)
+# Obsidian Agent Terminal MCP
 
-An Obsidian plugin that integrates Claude Code with your vault. It provides an embedded terminal for running Claude Code directly inside Obsidian and an MCP (Model Context Protocol) server for connecting external Claude clients.
+An Obsidian plugin that embeds AI agent terminals in your vault and provides an MCP (Model Context Protocol) server for Claude Code and other compatible external clients.
 
 This repository is the `Chrisp671` fork of the original project by `iansinnott`. The fork uses its own plugin id, `claude-code-mcp-chrisp671`, so it can be distributed without colliding with upstream installs.
 
@@ -136,7 +136,7 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Custom Port Setup:**
 
-1.  Go to **Obsidian Settings** > **Community Plugins** > **Claude Code MCP (Chrisp671)** > **Settings**
+1.  Go to **Obsidian Settings** > **Community Plugins** > **Obsidian Agent Terminal MCP** > **Settings**
 2.  Change the **"HTTP Server Port"** in the MCP Server Configuration section
 3.  **Update your Claude Desktop config** to use the new port:
     ```json
@@ -165,7 +165,7 @@ _As of 2025-06-09_
 
 ## Configuration
 
-Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Claude Code MCP (Chrisp671)**.
+Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Obsidian Agent Terminal MCP**.
 
 ### MCP Server Configuration
 
