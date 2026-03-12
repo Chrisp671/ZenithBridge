@@ -1,4 +1,4 @@
-# Obsidian Agent Terminal MCP
+# Agent Terminal MCP
 
 An Obsidian plugin that embeds AI agent terminals in your vault and provides an MCP (Model Context Protocol) server for Claude Code and other compatible external clients.
 
@@ -136,7 +136,7 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Custom Port Setup:**
 
-1.  Go to **Obsidian Settings** > **Community Plugins** > **Obsidian Agent Terminal MCP** > **Settings**
+1.  Go to **Obsidian Settings** > **Community Plugins** > **Agent Terminal MCP** > **Settings**
 2.  Change the **"HTTP Server Port"** in the MCP Server Configuration section
 3.  **Update your Claude Desktop config** to use the new port:
     ```json
@@ -165,7 +165,7 @@ _As of 2025-06-09_
 
 ## Configuration
 
-Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Obsidian Agent Terminal MCP**.
+Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Agent Terminal MCP**.
 
 ### MCP Server Configuration
 

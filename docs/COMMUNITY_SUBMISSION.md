@@ -9,9 +9,9 @@ This document provides step-by-step instructions for submitting the Chrisp671 fo
 ```json
 {
 	"id": "claude-code-mcp-chrisp671",
-	"name": "Obsidian Agent Terminal MCP",
+	"name": "Agent Terminal MCP",
 	"author": "Chrisp671",
-	"description": "Run AI agent terminals in Obsidian and connect your vault to external tools through Model Context Protocol (MCP).",
+	"description": "Run AI agent terminals in your vault and connect external tools through Model Context Protocol (MCP).",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -57,9 +57,9 @@ bun run build
 ```json
 {
 	"id": "claude-code-mcp-chrisp671",
-	"name": "Obsidian Agent Terminal MCP",
+	"name": "Agent Terminal MCP",
 	"author": "Chrisp671",
-	"description": "Run AI agent terminals in Obsidian and connect your vault to external tools through Model Context Protocol (MCP).",
+	"description": "Run AI agent terminals in your vault and connect external tools through Model Context Protocol (MCP).",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -73,22 +73,22 @@ jq . community-plugins.json
 ### 5. Submit Pull Request
 
 1. Create a new branch: `git checkout -b add-obsidian-agent-terminal-mcp`
-2. Commit changes: `git commit -m "Add Obsidian Agent Terminal MCP plugin"`
+2. Commit changes: `git commit -m "Add Agent Terminal MCP plugin"`
 3. Push to your fork: `git push origin add-obsidian-agent-terminal-mcp`
 4. Open pull request on the main obsidian-releases repository
 
 ### 6. Pull Request Details
 
-**Title:** `Add Obsidian Agent Terminal MCP plugin`
+**Title:** `Add Agent Terminal MCP plugin`
 
 **Description:**
 
 ```markdown
-# Obsidian Agent Terminal MCP Plugin Submission
+# Agent Terminal MCP Plugin Submission
 
 ## Plugin Information
 
--   **Name:** Obsidian Agent Terminal MCP
+-   **Name:** Agent Terminal MCP
 -   **Author:** Chrisp671
 -   **Repository:** https://github.com/Chrisp671/obsidian-claude-code-mcp
 -   **Latest Release:** v1.1.3
