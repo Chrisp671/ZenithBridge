@@ -110,7 +110,7 @@ This plugin implements an MCP (Model Context Protocol) server to enable Claude C
 
 -   **Desktop Only:** Yes (requires WebSocket server capabilities)
 -   **Dependencies:** All bundled, no external runtime dependencies
--   **Min Obsidian Version:** 0.15.0
+-   **Min Obsidian Version:** 1.0.0
 -   **File Size:** ~694KB (bundled)
 
 ## Testing
