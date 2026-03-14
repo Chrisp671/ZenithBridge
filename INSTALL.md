@@ -1,6 +1,6 @@
-# Install Agent Terminal MCP
+# Install Zenith Bridge
 
-This is the quickest setup guide for people who want to use `Agent Terminal MCP` with their own Obsidian vault.
+This is the quickest setup guide for people who want to use `Zenith Bridge` with their own Obsidian vault.
 
 ## Option 1: Install with BRAT
 
@@ -14,7 +14,7 @@ This is the easiest option if the plugin is not yet in the official Obsidian com
 https://github.com/Chrisp671/obsidian-claude-code-mcp
 ```
 
-4. Enable `Agent Terminal MCP` in `Settings -> Community Plugins`.
+4. Enable `Zenith Bridge` in `Settings -> Community Plugins`.
 5. Use BRAT to install future updates from GitHub.
 
 ## Option 2: Manual install from a release
@@ -32,12 +32,12 @@ https://github.com/Chrisp671/obsidian-claude-code-mcp/releases/latest
 3. In your vault, create this folder if it does not already exist:
 
 ```text
-.obsidian/plugins/claude-code-mcp-chrisp671/
+.obsidian/plugins/zenith-bridge/
 ```
 
 4. Copy the three downloaded files into that folder.
 5. In Obsidian, reload community plugins or restart the app.
-6. Enable `Agent Terminal MCP` in `Settings -> Community Plugins`.
+6. Enable `Zenith Bridge` in `Settings -> Community Plugins`.
 
 ## Requirements
 

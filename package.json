@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-claude-code-mcp-chrisp671",
+	"name": "zenith-bridge",
 	"version": "1.2.3",
 	"description": "Run AI agent terminals in your vault and connect external tools through MCP.",
 	"main": "main.js",

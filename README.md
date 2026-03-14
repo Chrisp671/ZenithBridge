@@ -1,8 +1,8 @@
-# Agent Terminal MCP
+# Zenith Bridge
 
-An Obsidian plugin that embeds AI agent terminals in your vault and provides an MCP (Model Context Protocol) server for Claude Code and other compatible external clients.
+An Obsidian plugin that bridges Zenith workflows into your vault — embedded AI agent terminals with MCP server support for Claude Code and other compatible clients.
 
-This repository is the `Chrisp671` fork of the original project by `iansinnott`. The fork uses its own plugin id, `claude-code-mcp-chrisp671`, so it can be distributed without colliding with upstream installs.
+This repository is the `Chrisp671` fork of the original project by `iansinnott`. The fork uses its own plugin id, `zenith-bridge`, so it can be distributed without colliding with upstream installs.
 
 ## Attribution
 
@@ -29,7 +29,7 @@ This project is not presented as an official Rich Schefren, Zenith, or Strategic
 
 ### All Platforms
 
--   **Obsidian** v1.4.0+
+-   **Obsidian** v1.0.0+
 -   **Python 3.7+** (optional but recommended for full terminal support)
 
 Without Python, the embedded terminal falls back to a basic `child_process` mode that lacks true PTY capabilities (no interactive TUI apps, no proper resize handling).
@@ -57,16 +57,16 @@ If this fork is not yet available in the official Obsidian community plugin dire
 1. Install the `BRAT` plugin from Obsidian's community plugins browser.
 2. Run the command `BRAT: Add a beta plugin for testing`.
 3. Enter this repository URL: `https://github.com/Chrisp671/obsidian-claude-code-mcp`
-4. Enable `Agent Terminal MCP` in Obsidian's community plugins settings.
+4. Enable `Zenith Bridge` in Obsidian's community plugins settings.
 5. Use BRAT to pull future updates from new GitHub releases.
 
 ### Option 2: Manual install from a GitHub release
 
 1. Download `manifest.json`, `main.js`, and `styles.css` from the latest GitHub release.
-2. Create this folder inside your vault if it does not already exist: `.obsidian/plugins/claude-code-mcp-chrisp671/`
+2. Create this folder inside your vault if it does not already exist: `.obsidian/plugins/zenith-bridge/`
 3. Copy the three release files into that folder.
 4. In Obsidian, reload community plugins or restart the app.
-5. Enable `Agent Terminal MCP` in **Settings -> Community Plugins**.
+5. Enable `Zenith Bridge` in **Settings -> Community Plugins**.
 
 ### CLI prerequisites
 
@@ -99,7 +99,7 @@ Each session launches your platform's default shell (PowerShell on Windows, `$SH
 
 This plugin serves as an MCP server that various Claude clients can connect to. Here's how to configure different clients:
 
-### Claude Desktop (as of 2025-06-09)
+### Claude Desktop
 
 Claude Desktop requires a special configuration to connect to the Obsidian MCP server because it does not directly support HTTP transports. We will use `mcp-remote`, a tool that creates a local `stdio` bridge to the server's HTTP endpoint.
 
@@ -162,27 +162,24 @@ Claude Code automatically discovers and connects to Obsidian vaults through WebS
 
 **Custom Port Setup:**
 
-1.  Go to **Obsidian Settings** > **Community Plugins** > **Agent Terminal MCP** > **Settings**
+1.  Go to **Obsidian Settings** > **Community Plugins** > **Zenith Bridge** > **Settings**
 2.  Change the **"HTTP Server Port"** in the MCP Server Configuration section
 3.  **Update your Claude Desktop config** to use the new port:
     ```json
     {
     	"mcpServers": {
     		"obsidian": {
-    			"url": "http://localhost:22360/mcp",
+    			"url": "http://localhost:22360/sse",
     			"env": {}
     		}
     	}
     }
     ```
-        NOTE: You can change the port in the settings.
 4.  **Restart Claude Desktop** to apply the changes
 
 **Multiple Vaults**: If you run multiple Obsidian vaults with this plugin, each vault needs a unique port. The plugin will automatically detect port conflicts and guide you to configure different ports.
 
 ### A Note on MCP Specification Version
-
-_As of 2025-06-09_
 
 > [!IMPORTANT]
 > This plugin intentionally uses an older MCP specification for HTTP transport. The latest ["Streamable HTTP" protocol (2025-03-26)](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) is not yet supported by most MCP clients, including Claude Code and Claude Desktop.
@@ -191,7 +188,7 @@ _As of 2025-06-09_
 
 ## Configuration
 
-Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Agent Terminal MCP**.
+Plugin settings are available under **Obsidian Settings** > **Community Plugins** > **Zenith Bridge**.
 
 ### MCP Server Configuration
 
@@ -321,10 +318,7 @@ This separation ensures that:
 This project uses TypeScript to provide type checking and documentation.
 The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
 
-### Releasing new releases
+### Releasing
 
--   Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
--   Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
--   Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
--   Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
--   Publish the release.
+-   **Patch releases**: see `docs/AUTOMATED_PATCH_RELEASE.md`
+-   **Minor / Major releases**: see `docs/RELEASE_CHECKLIST.md`

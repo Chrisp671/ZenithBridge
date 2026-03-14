@@ -1,6 +1,6 @@
 # Community Plugin Submission Guide
 
-This document provides step-by-step instructions for submitting the Chrisp671 fork of the Claude Code Editor & MCP plugin to the Obsidian Community Plugin Directory.
+This document provides step-by-step instructions for submitting Zenith Bridge to the Obsidian Community Plugin Directory.
 
 ## Plugin Information
 
@@ -8,10 +8,10 @@ This document provides step-by-step instructions for submitting the Chrisp671 fo
 
 ```json
 {
-	"id": "claude-code-mcp-chrisp671",
-	"name": "Agent Terminal MCP",
+	"id": "zenith-bridge",
+	"name": "Zenith Bridge",
 	"author": "Chrisp671",
-	"description": "Run AI agent terminals in your vault and connect external tools through Model Context Protocol (MCP).",
+	"description": "An Obsidian plugin that bridges Zenith workflows into your vault — embedded AI agent terminals with MCP server support for Claude Code and other compatible clients.",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -56,10 +56,10 @@ bun run build
 
 ```json
 {
-	"id": "claude-code-mcp-chrisp671",
-	"name": "Agent Terminal MCP",
+	"id": "zenith-bridge",
+	"name": "Zenith Bridge",
 	"author": "Chrisp671",
-	"description": "Run AI agent terminals in your vault and connect external tools through Model Context Protocol (MCP).",
+	"description": "An Obsidian plugin that bridges Zenith workflows into your vault — embedded AI agent terminals with MCP server support for Claude Code and other compatible clients.",
 	"repo": "Chrisp671/obsidian-claude-code-mcp"
 }
 ```
@@ -72,23 +72,23 @@ jq . community-plugins.json
 
 ### 5. Submit Pull Request
 
-1. Create a new branch: `git checkout -b add-obsidian-agent-terminal-mcp`
-2. Commit changes: `git commit -m "Add Agent Terminal MCP plugin"`
-3. Push to your fork: `git push origin add-obsidian-agent-terminal-mcp`
+1. Create a new branch: `git checkout -b add-zenith-bridge`
+2. Commit changes: `git commit -m "Add Zenith Bridge plugin"`
+3. Push to your fork: `git push origin add-zenith-bridge`
 4. Open pull request on the main obsidian-releases repository
 
 ### 6. Pull Request Details
 
-**Title:** `Add Agent Terminal MCP plugin`
+**Title:** `Add Zenith Bridge plugin`
 
 **Description:**
 
 ```markdown
-# Agent Terminal MCP Plugin Submission
+# Zenith Bridge Plugin Submission
 
 ## Plugin Information
 
--   **Name:** Agent Terminal MCP
+-   **Name:** Zenith Bridge
 -   **Author:** Chrisp671
 -   **Repository:** https://github.com/Chrisp671/obsidian-claude-code-mcp
 -   **Latest Release:** v1.1.3
@@ -178,7 +178,7 @@ The plugin repository demonstrates:
 
 ## Notes
 
--   The plugin ID `claude-code-mcp-chrisp671` differs from repository name `obsidian-claude-code-mcp` - this is intentional and documented
+-   The plugin ID is `zenith-bridge`
 -   Plugin requires desktop-only features (WebSocket servers) and is properly marked
 -   All dependencies are bundled - users don't need to install additional software
 -   Supports multiple vault configurations through port management

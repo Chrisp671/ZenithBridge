@@ -121,7 +121,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "Claude Code Settings" });
+		containerEl.createEl("h2", { text: "Zenith Bridge Settings" });
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);

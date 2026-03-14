@@ -85,7 +85,7 @@ This is an Obsidian plugin that implements MCP (Model Context Protocol) servers 
 
 ### Testing Workflow
 1. Build: `bun run build`
-2. Copy output to test vault: `.obsidian/plugins/claude-code-terminal/`
+2. Copy output to test vault: `.obsidian/plugins/zenith-bridge/`
 3. Enable plugin in Obsidian settings
 4. For Claude Code: Run `claude` in terminal and use `/ide` command
 5. For Claude Desktop: Configure in settings (see README)
@@ -102,7 +102,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "obsidian": {
-      "url": "http://localhost:22360/mcp",
+      "url": "http://localhost:22360/sse",
       "env": {}
     }
   }

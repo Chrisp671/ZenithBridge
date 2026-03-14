@@ -1,9 +1,9 @@
 {
-	"id": "claude-code-mcp-chrisp671",
-	"name": "Agent Terminal MCP",
+	"id": "zenith-bridge",
+	"name": "Zenith Bridge",
 	"minAppVersion": "1.0.0",
 	"version": "1.2.3",
-	"description": "Run AI agent terminals in your vault and connect external tools through Model Context Protocol (MCP).",
+	"description": "An Obsidian plugin that bridges Zenith workflows into your vault — embedded AI agent terminals with MCP server support for Claude Code and other compatible clients.",
 	"author": "Chrisp671",
 	"authorUrl": "https://github.com/Chrisp671",
 	"isDesktopOnly": true

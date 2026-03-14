@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install script for the Chrisp671 fork of the Obsidian Claude Code MCP plugin
+# Install script for the Zenith Bridge Obsidian plugin
 # Copies built plugin files to an Obsidian vault's plugins directory
 
 # Colors for output
@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 usage() {
     echo "Usage: $0 [VAULT_PATH]"
     echo ""
-    echo "Install the Chrisp671 fork of the Claude Code MCP plugin into an Obsidian vault."
+    echo "Install the Zenith Bridge plugin into an Obsidian vault."
     echo ""
     echo "Arguments:"
     echo "  VAULT_PATH    Path to your Obsidian vault (the folder containing .obsidian/)"
@@ -51,7 +51,7 @@ if [ ! -d "$VAULT_PATH/.obsidian" ]; then
 fi
 
 # Target directory for the plugin
-TARGET_DIR="$PLUGINS_DIR/claude-code-mcp-chrisp671"
+TARGET_DIR="$PLUGINS_DIR/zenith-bridge"
 
 # Required files (should be in the same directory as this script)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
