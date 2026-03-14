@@ -260,7 +260,7 @@ export class McpHttpServer {
 		}
 
 		const body = await this.readRequestBody(req);
-		let messages: { id?: string | number; method?: string; [key: string]: unknown }[];
+		let messages: { id?: string | number; method?: string; params?: unknown; [key: string]: unknown }[];
 
 		try {
 			const parsed = JSON.parse(body);
@@ -280,8 +280,15 @@ export class McpHttpServer {
 			// Only responses/notifications - return 202 Accepted
 			for (const msg of messages) {
 				if (msg.method) {
-					// Handle notification
-					this.config.onMessage(msg as unknown as McpRequest, () => {});
+					// Construct a proper McpRequest for the notification
+					// Notifications lack an `id`, so we use a synthetic one
+					const notificationRequest: McpRequest = {
+						jsonrpc: "2.0",
+						id: msg.id ?? 0,
+						method: msg.method,
+						params: (msg.params as Record<string, unknown>) || {},
+					};
+					this.config.onMessage(notificationRequest, () => {});
 				}
 			}
 			res.writeHead(202);
@@ -331,7 +338,14 @@ export class McpHttpServer {
 					stream.response.end();
 				};
 
-				this.config.onMessage(request as unknown as McpRequest, reply);
+				// Construct a proper McpRequest with required jsonrpc field
+			const mcpRequest: McpRequest = {
+				jsonrpc: "2.0",
+				id: request.id as string | number,
+				method: request.method as string,
+				params: (request.params as Record<string, unknown>) || {},
+			};
+			this.config.onMessage(mcpRequest, reply);
 			}
 		}
 
