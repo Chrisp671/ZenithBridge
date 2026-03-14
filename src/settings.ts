@@ -23,6 +23,8 @@ export interface ClaudeCodeSettings {
 	maxTerminalSessions: number;
 	defaultTerminalProfileId: string;
 	terminalProfiles: TerminalProfile[];
+	enableQmd: boolean;
+	qmdEndpoint: string;
 }
 
 export const DEFAULT_SETTINGS: ClaudeCodeSettings = {
@@ -34,6 +36,8 @@ export const DEFAULT_SETTINGS: ClaudeCodeSettings = {
 	maxTerminalSessions: 4,
 	defaultTerminalProfileId: BUILTIN_CLAUDE_PROFILE_ID,
 	terminalProfiles: [],
+	enableQmd: false,
+	qmdEndpoint: "http://localhost:3001",
 };
 
 export function migrateClaudeCodeSettings(rawData: unknown): ClaudeCodeSettings {
@@ -106,6 +110,14 @@ export function migrateClaudeCodeSettings(rawData: unknown): ClaudeCodeSettings 
 				: DEFAULT_SETTINGS.maxTerminalSessions,
 		defaultTerminalProfileId,
 		terminalProfiles: customProfiles,
+		enableQmd:
+			typeof raw.enableQmd === "boolean"
+				? raw.enableQmd
+				: DEFAULT_SETTINGS.enableQmd,
+		qmdEndpoint:
+			typeof raw.qmdEndpoint === "string" && raw.qmdEndpoint.trim()
+				? raw.qmdEndpoint.trim()
+				: DEFAULT_SETTINGS.qmdEndpoint,
 	};
 }
 
@@ -125,6 +137,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);
+		this.displayQmdSettings(containerEl);
 		this.displayTerminalSettings(containerEl);
 	}
 
@@ -195,6 +208,111 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 					}
 				});
 			});
+	}
+
+	private displayQmdSettings(containerEl: HTMLElement): void {
+		containerEl.createEl("h3", { text: "QMD Semantic Search" });
+
+		new Setting(containerEl)
+			.setName("Enable QMD integration")
+			.setDesc(
+				"Connect to a running QMD instance for semantic search across your indexed documents. Requires QMD to be installed and running separately (qmd mcp --http)."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enableQmd)
+					.onChange(async (value) => {
+						this.plugin.settings.enableQmd = value;
+						await this.plugin.saveSettings();
+						await this.plugin.restartMcpServer();
+						this.display();
+					})
+			);
+
+		if (!this.plugin.settings.enableQmd) {
+			return;
+		}
+
+		new Setting(containerEl)
+			.setName("QMD endpoint")
+			.setDesc(
+				"URL of the running QMD HTTP MCP server."
+			)
+			.addText((text) => {
+				text
+					.setPlaceholder("http://localhost:3001")
+					.setValue(this.plugin.settings.qmdEndpoint)
+					.onChange(async (value) => {
+						this.plugin.settings.qmdEndpoint = value.trim();
+						await this.plugin.saveSettings();
+					});
+
+				text.inputEl.addEventListener("blur", async () => {
+					const val = text.getValue().trim();
+					if (!val) {
+						text.setValue(this.plugin.settings.qmdEndpoint);
+						return;
+					}
+					await this.plugin.restartMcpServer();
+					this.display();
+				});
+			});
+
+		const testContainer = containerEl.createEl("div", {
+			cls: "qmd-test-connection",
+		});
+		const testSetting = new Setting(testContainer)
+			.setName("Connection status")
+			.setDesc("Check if QMD is reachable at the configured endpoint.");
+
+		const statusEl = testContainer.createEl("div", {
+			cls: "status-line",
+		});
+
+		testSetting.addButton((button) =>
+			button.setButtonText("Test Connection").onClick(async () => {
+				statusEl.empty();
+				statusEl.innerHTML = `<span class="status-text">Testing...</span>`;
+
+				try {
+					const endpoint = this.plugin.settings.qmdEndpoint.replace(/\/+$/, "");
+					const response = await fetch(`${endpoint}/mcp`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							jsonrpc: "2.0",
+							id: "health-check",
+							method: "initialize",
+							params: {
+								protocolVersion: "2024-11-05",
+								capabilities: {},
+								clientInfo: {
+									name: "obsidian-qmd-healthcheck",
+									version: "1.0.0",
+								},
+							},
+						}),
+					});
+
+					if (response.ok) {
+						statusEl.innerHTML = `
+							<span class="status-indicator status-running">●</span>
+							<span class="status-text">Connected to QMD</span>
+						`;
+					} else {
+						statusEl.innerHTML = `
+							<span class="status-indicator status-error">●</span>
+							<span class="status-text">QMD returned HTTP ${response.status}</span>
+						`;
+					}
+				} catch (error) {
+					statusEl.innerHTML = `
+						<span class="status-indicator status-error">●</span>
+						<span class="status-text">Cannot reach QMD at ${this.plugin.settings.qmdEndpoint}</span>
+					`;
+				}
+			})
+		);
 	}
 
 	private displayTerminalSettings(containerEl: HTMLElement): void {

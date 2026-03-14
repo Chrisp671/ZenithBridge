@@ -78,6 +78,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 				httpPort: this.settings.mcpHttpPort,
 				enableWebSocket: this.settings.enableWebSocketServer,
 				enableHttp: this.settings.enableHttpServer,
+				enableQmd: this.settings.enableQmd,
+				qmdEndpoint: this.settings.qmdEndpoint,
 			});
 
 			// Start services

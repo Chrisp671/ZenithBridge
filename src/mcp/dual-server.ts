@@ -8,6 +8,7 @@ import { WorkspaceManager } from "../obsidian/workspace-manager";
 import { ToolRegistry } from "../shared/tool-registry";
 import { GeneralTools, GENERAL_TOOL_DEFINITIONS } from "../tools/general-tools";
 import { IdeTools, IDE_TOOL_DEFINITIONS } from "../ide/ide-tools";
+import { QmdTools, QMD_TOOL_DEFINITIONS } from "../tools/qmd-tools";
 
 export interface DualServerConfig {
 	app: App;
@@ -16,6 +17,8 @@ export interface DualServerConfig {
 	httpPort?: number;
 	enableWebSocket?: boolean;
 	enableHttp?: boolean;
+	enableQmd?: boolean;
+	qmdEndpoint?: string;
 }
 
 export class McpDualServer {
@@ -79,6 +82,28 @@ export class McpDualServer {
 			
 			// Only register to WebSocket registry (IDE-specific)
 			this.wsToolRegistry.register(definition, implementation);
+		}
+
+		// Register QMD tools to BOTH registries (when enabled)
+		if (this.config.enableQmd) {
+			const qmdTools = new QmdTools(
+				this.config.qmdEndpoint || "http://localhost:3001"
+			);
+			const qmdImplementations = qmdTools.createImplementations();
+
+			for (let i = 0; i < QMD_TOOL_DEFINITIONS.length; i++) {
+				const definition = QMD_TOOL_DEFINITIONS[i];
+				const implementation = qmdImplementations[i];
+
+				if (!implementation || definition.name !== implementation.name) {
+					throw new Error(
+						`Tool definition and implementation mismatch for ${definition.name}`
+					);
+				}
+
+				this.wsToolRegistry.register(definition, implementation);
+				this.httpToolRegistry.register(definition, implementation);
+			}
 		}
 
 		// Log registered tools for debugging
