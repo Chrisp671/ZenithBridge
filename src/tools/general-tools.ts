@@ -165,7 +165,7 @@ export class GeneralTools {
 		return [
 			{
 				name: "get_current_file",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					const activeFile = this.app.workspace.getActiveFile();
 					return reply({
 						result: {
@@ -183,7 +183,7 @@ export class GeneralTools {
 			},
 			{
 				name: "get_workspace_files",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					const { pattern } = args || {};
 					const allFiles = this.app.vault.getFiles();
 					let filteredFiles = allFiles.map((file) => file.path);
@@ -211,7 +211,7 @@ export class GeneralTools {
 			},
 			{
 				name: "view",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						const { path, view_range } = args || {};
 						if (!path || typeof path !== "string") {
@@ -255,12 +255,9 @@ export class GeneralTools {
 									content: [
 										{
 											type: "text",
-											text:
-												dirFiles.length > 0
-													? `Directory contents:\n${dirFiles.join(
-															"\n"
-													  )}`
-													: "Directory is empty or does not exist",
+											text: dirFiles.length > 0
+												? `Directory contents:\n${dirFiles.join("\n")}`
+												: "Directory is empty or does not exist",
 										},
 									],
 								},
@@ -308,11 +305,11 @@ export class GeneralTools {
 								},
 							});
 						}
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
-								message: `failed to view file/directory: ${error.message}`,
+								message: `failed to view file/directory: ${(error as Error).message}`,
 							},
 						});
 					}
@@ -320,7 +317,7 @@ export class GeneralTools {
 			},
 			{
 				name: "str_replace",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						const { path, old_str, new_str } = args || {};
 						if (
@@ -374,11 +371,11 @@ export class GeneralTools {
 								],
 							},
 						});
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
-								message: `failed to replace text: ${error.message}`,
+								message: `failed to replace text: ${(error as Error).message}`,
 							},
 						});
 					}
@@ -386,7 +383,7 @@ export class GeneralTools {
 			},
 			{
 				name: "create",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						const { path, file_text } = args || {};
 						if (
@@ -416,7 +413,7 @@ export class GeneralTools {
 										"File already exists. Use str_replace to modify existing files.",
 								},
 							});
-						} catch (error) {
+						} catch (_readError: unknown) {
 							// File doesn't exist, which is what we want for create
 						}
 
@@ -432,11 +429,11 @@ export class GeneralTools {
 								],
 							},
 						});
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
-								message: `failed to create file: ${error.message}`,
+								message: `failed to create file: ${(error as Error).message}`,
 							},
 						});
 					}
@@ -444,7 +441,7 @@ export class GeneralTools {
 			},
 			{
 				name: "insert",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						const { path, insert_line, new_str } = args || {};
 						if (
@@ -495,11 +492,11 @@ export class GeneralTools {
 								],
 							},
 						});
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
-								message: `failed to insert text: ${error.message}`,
+								message: `failed to insert text: ${(error as Error).message}`,
 							},
 						});
 					}
@@ -507,7 +504,7 @@ export class GeneralTools {
 			},
 			{
 				name: "obsidian_api",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						const { functionBody } = args || {};
 						if (!functionBody || typeof functionBody !== "string") {
@@ -521,6 +518,7 @@ export class GeneralTools {
 						}
 
 						// Create and execute the function
+						// eslint-disable-next-line no-new-func
 						const fn = new Function("app", "obsidian", functionBody);
 						let result = fn(this.app, obsidian);
 
@@ -540,7 +538,7 @@ export class GeneralTools {
 								result !== undefined
 									? JSON.stringify(result, null, 2)
 									: "undefined";
-						} catch (serializationError) {
+						} catch (_serializationError: unknown) {
 							serializedResult = `[Non-serializable result: ${typeof result}]`;
 						}
 
@@ -554,12 +552,12 @@ export class GeneralTools {
 								],
 							},
 						});
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
 								message: `Error executing function: ${
-									error.message || error
+									(error as Error).message || error
 								}`,
 							},
 						});

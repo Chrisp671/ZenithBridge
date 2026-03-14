@@ -12,6 +12,7 @@ import {
 	ClaudeCodeSettingTab,
 	migrateClaudeCodeSettings,
 } from "./src/settings";
+import { getVaultBasePath } from "./src/obsidian/utils";
 import claudeLogo from "./assets/claude-logo.png";
 import { TerminalManager } from "./src/terminal/terminal-manager";
 import {
@@ -85,9 +86,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			console.debug(`[MCP] Dual server started:`, serverInfo);
 
 			// Update lock file with workspace path
-			const basePath =
-				(this.app.vault.adapter as any).getBasePath?.() ||
-				process.cwd();
+			const basePath = getVaultBasePath(this.app.vault.adapter);
 			console.debug(`[MCP] Vault base path: ${basePath}`);
 			this.mcpServer.updateWorkspaceFolders(basePath);
 			
@@ -107,8 +106,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 
 			// Handle specific error types
 			if (
-				error.message?.includes("EADDRINUSE") ||
-				error.name === "PortInUseError"
+				(error as Error).message?.includes("EADDRINUSE") ||
+				(error as Error).name === "PortInUseError"
 			) {
 				// Enhanced message for port conflicts, especially multiple vaults
 				new Notice(
@@ -119,8 +118,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 					10000
 				);
 			} else if (
-				error.message?.includes("EACCES") ||
-				error.name === "PermissionError"
+				(error as Error).message?.includes("EACCES") ||
+				(error as Error).name === "PermissionError"
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
@@ -129,7 +128,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 				);
 			} else {
 				new Notice(
-					`Failed to start MCP server: ${error.message}`,
+					`Failed to start MCP server: ${(error as Error).message}`,
 					8000
 				);
 			}
@@ -154,8 +153,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 
 			// Handle specific error types
 			if (
-				error.message?.includes("EADDRINUSE") ||
-				error.name === "PortInUseError"
+				(error as Error).message?.includes("EADDRINUSE") ||
+				(error as Error).name === "PortInUseError"
 			) {
 				new Notice(
 					`Port ${this.settings.mcpHttpPort} is already in use. This might be because:\n` +
@@ -165,8 +164,8 @@ export default class ClaudeMcpPlugin extends Plugin {
 					10000
 				);
 			} else if (
-				error.message?.includes("EACCES") ||
-				error.name === "PermissionError"
+				(error as Error).message?.includes("EACCES") ||
+				(error as Error).name === "PermissionError"
 			) {
 				new Notice(
 					`Permission denied for port ${this.settings.mcpHttpPort}. ` +
@@ -175,7 +174,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 				);
 			} else {
 				new Notice(
-					`Failed to restart MCP server: ${error.message}`,
+					`Failed to restart MCP server: ${(error as Error).message}`,
 					8000
 				);
 			}
@@ -188,7 +187,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 		if (!this.terminalRibbonIcon) {
 			this.terminalRibbonIcon = this.addRibbonIcon(
 				"claude-logo",
-				"Open or Focus Default Terminal",
+				"Open or focus default terminal",
 				() => {
 					void this.focusOrCreateTerminal();
 				}
@@ -224,20 +223,19 @@ export default class ClaudeMcpPlugin extends Plugin {
 			// Register commands
 			this.addCommand({
 				id: "toggle-claude-terminal",
-				name: "Open or Focus Default Terminal",
+				name: "Open or focus default terminal",
 				callback: () => void this.focusOrCreateTerminal(),
-				hotkeys: [{ modifiers: ["Ctrl"], key: "`" }],
 			});
 
 			this.addCommand({
 				id: "new-default-agent-terminal",
-				name: "New Default Agent Terminal",
+				name: "New default agent terminal",
 				callback: () => void this.openDefaultTerminal(),
 			});
 
 			this.addCommand({
 				id: "new-agent-terminal",
-				name: "New Agent Terminal...",
+				name: "New agent terminal...",
 				callback: () => this.openTerminalPicker(),
 			});
 		} catch (error) {

@@ -4,6 +4,7 @@ import {
 	McpReplyFunction,
 	WorkspaceInfo,
 } from "../mcp/types";
+import { getVaultBasePath } from "../obsidian/utils";
 
 // This class is now deprecated in favor of the tool registry approach
 // Keeping only for getWorkspaceInfo which is not a tool
@@ -17,8 +18,7 @@ export class WorkspaceTools {
 	): Promise<void> {
 		try {
 			const vaultName = this.app.vault.getName();
-			const basePath =
-				(this.app.vault.adapter as any).getBasePath?.() || "unknown";
+			const basePath = getVaultBasePath(this.app.vault.adapter);
 			const fileCount = this.app.vault.getFiles().length;
 
 			const workspaceInfo: WorkspaceInfo = {
@@ -29,11 +29,11 @@ export class WorkspaceTools {
 			};
 
 			reply({ result: workspaceInfo });
-		} catch (error) {
+		} catch (error: unknown) {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to get workspace info: ${error.message}`,
+					message: `failed to get workspace info: ${(error as Error).message}`,
 				},
 			});
 		}

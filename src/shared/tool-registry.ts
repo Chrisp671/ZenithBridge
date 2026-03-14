@@ -2,7 +2,7 @@ import { Tool, McpRequest, McpReplyFunction } from "../mcp/types";
 
 export interface ToolImplementation {
 	name: string;
-	handler: (args: any, reply: McpReplyFunction) => Promise<void>;
+	handler: (args: Record<string, unknown>, reply: McpReplyFunction) => Promise<void>;
 }
 
 export interface ToolDefinition extends Tool {
@@ -36,16 +36,18 @@ export class ToolRegistry {
 		reply: McpReplyFunction
 	): Promise<void> {
 		const { name, arguments: args } = req.params || {};
+		const toolName = name as string;
+		const toolArgs = (args || {}) as Record<string, unknown>;
 
-		const tool = this.tools.get(name);
+		const tool = this.tools.get(toolName);
 		if (!tool) {
-			console.error(`[ToolRegistry] Unknown tool called: ${name}`, args);
+			console.error(`[ToolRegistry] Unknown tool called: ${toolName}`, toolArgs);
 			return reply({
 				result: {
 					content: [
 						{
 							type: "text",
-							text: `Tool '${name}' is not registered`,
+							text: `Tool '${toolName}' is not registered`,
 						},
 					],
 				},
@@ -53,12 +55,12 @@ export class ToolRegistry {
 		}
 
 		try {
-			await tool.implementation.handler(args, reply);
+			await tool.implementation.handler(toolArgs, reply);
 		} catch (error) {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to call tool ${name}: ${error.message}`,
+					message: `failed to call tool ${name}: ${(error as Error).message}`,
 				},
 			});
 		}
@@ -69,7 +71,11 @@ export class ToolRegistry {
 		for (const { definition } of this.tools.values()) {
 			if (!category || definition.category === category) {
 				// Return Tool without the category field
-				const { category: _, ...toolDef } = definition;
+				const toolDef: Tool = {
+					name: definition.name,
+					description: definition.description,
+					inputSchema: definition.inputSchema,
+				};
 				definitions.push(toolDef);
 			}
 		}

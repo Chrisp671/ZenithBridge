@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import * as http from "http";
+import * as os from "os";
 import { McpRequest, McpNotification } from "./types";
 import { getClaudeIdeDir } from "../claude-config";
 
@@ -18,8 +19,8 @@ export class McpServer {
 	private lockFilePaths: string[] = [];
 	private connectedClients: Set<WebSocket> = new Set();
 	private config: McpServerConfig;
-	private port: number = 0;
-	private authToken: string = "";
+	private port = 0;
+	private authToken = "";
 
 	constructor(config: McpServerConfig) {
 		this.config = config;
@@ -33,7 +34,7 @@ export class McpServer {
 		this.wss = new WebSocketServer({ port: 0 });
 
 		// address() is cast-safe once server is listening
-		this.port = (this.wss.address() as any).port as number;
+		this.port = (this.wss.address() as { port: number }).port;
 
 		this.wss.on("connection", (sock: WebSocket, request: http.IncomingMessage) => {
 			// Validate auth token from query parameter
@@ -73,7 +74,7 @@ export class McpServer {
 		});
 
 		// Write the discovery lock-file Claude looks for
-		await this.createLockFile(this.port);
+		this.createLockFile(this.port);
 
 		// Set environment variables that Claude Code CLI expects
 		process.env.CLAUDE_CODE_SSE_PORT = this.port.toString();
@@ -113,7 +114,7 @@ export class McpServer {
 		return this.port;
 	}
 
-	private async createLockFile(port: number): Promise<void> {
+	private createLockFile(port: number): void {
 		const lockFileContent = {
 			pid: process.pid,
 			workspaceFolders: [] as string[],
@@ -133,7 +134,7 @@ export class McpServer {
 
 		// Also write to the alternate config location so Claude Code can find it
 		// regardless of whether it checks ~/.config/claude/ide/ or ~/.claude/ide/
-		const homeDir = require("os").homedir();
+		const homeDir = os.homedir();
 		const altDirs = [
 			path.join(homeDir, ".claude", "ide"),
 			path.join(homeDir, ".config", "claude", "ide"),

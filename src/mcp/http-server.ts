@@ -47,7 +47,7 @@ export class McpHttpServer {
 				this.handleRequest(req, res);
 			});
 
-			this.server.on("error", (error: any) => {
+			this.server.on("error", (error: NodeJS.ErrnoException) => {
 				if (error.code === "EADDRINUSE") {
 					console.error(`[MCP HTTP] Port ${port} is in use`);
 					reject(error);
@@ -58,8 +58,8 @@ export class McpHttpServer {
 			});
 
 			this.server.listen(port, "127.0.0.1", () => {
-				this.port = (this.server.address() as any)?.port || port;
-				console.log(`[MCP HTTP] Server started on port ${this.port}`);
+				this.port = (this.server.address() as { port: number })?.port || port;
+				console.debug(`[MCP HTTP] Server started on port ${this.port}`);
 				resolve(this.port);
 			});
 		});
@@ -74,7 +74,7 @@ export class McpHttpServer {
 		this.sessions.clear();
 
 		this.server?.close();
-		console.log("[MCP HTTP] Server stopped");
+		console.debug("[MCP HTTP] Server stopped");
 	}
 
 	get clientCount(): number {
@@ -179,10 +179,10 @@ export class McpHttpServer {
 		}
 	}
 
-	private async handleSSEConnection(
+	private handleSSEConnection(
 		req: http.IncomingMessage,
 		res: http.ServerResponse
-	): Promise<void> {
+	): void {
 		// Validate Accept header
 		const accept = req.headers.accept || "";
 		if (!accept.includes("text/event-stream")) {
@@ -259,9 +259,8 @@ export class McpHttpServer {
 			return;
 		}
 
-		const session = this.sessions.get(sessionId)!;
 		const body = await this.readRequestBody(req);
-		let messages: any[];
+		let messages: { id?: string | number; method?: string; [key: string]: unknown }[];
 
 		try {
 			const parsed = JSON.parse(body);
@@ -282,7 +281,7 @@ export class McpHttpServer {
 			for (const msg of messages) {
 				if (msg.method) {
 					// Handle notification
-					this.config.onMessage(msg as McpRequest, () => {});
+					this.config.onMessage(msg as unknown as McpRequest, () => {});
 				}
 			}
 			res.writeHead(202);
@@ -305,7 +304,7 @@ export class McpHttpServer {
 				const reply: HttpReplyFunction = (msg) => {
 					const response: McpResponse = {
 						jsonrpc: "2.0",
-						id: request.id,
+						id: request.id as string | number,
 						...msg,
 					};
 					const eventId = ++this.eventIdCounter;
@@ -332,7 +331,7 @@ export class McpHttpServer {
 					stream.response.end();
 				};
 
-				this.config.onMessage(request as McpRequest, reply);
+				this.config.onMessage(request as unknown as McpRequest, reply);
 			}
 		}
 

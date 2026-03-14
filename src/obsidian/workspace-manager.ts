@@ -1,10 +1,10 @@
-import { App, Editor, Plugin } from "obsidian";
+import { App, Editor, MarkdownView, Plugin } from "obsidian";
 import {
 	McpNotification,
 	SelectionChangedParams,
 	SelectionRange,
 } from "../mcp/types";
-import { getAbsolutePath } from "./utils";
+import { getAbsolutePath, getVaultBasePath } from "./utils";
 
 export interface WorkspaceManagerConfig {
 	onSelectionChange: (notification: McpNotification) => void;
@@ -52,9 +52,8 @@ export class WorkspaceManager {
 			return;
 		}
 
-		const activeLeaf = this.app.workspace.activeLeaf;
-		const view = activeLeaf?.view;
-		const editor = (view as any)?.editor;
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		const editor = view?.editor;
 
 		if (editor) {
 			this.sendSelectionContext(editor);
@@ -114,9 +113,8 @@ export class WorkspaceManager {
 		const activeFile = this.app.workspace.getActiveFile();
 
 		// Try to get the active editor for cursor/selection info
-		const activeLeaf = this.app.workspace.activeLeaf;
-		const view = activeLeaf?.view;
-		const editor = (view as any)?.editor;
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		const editor = view?.editor;
 
 		if (editor && activeFile) {
 			this.sendSelectionContext(editor);
@@ -180,15 +178,14 @@ export class WorkspaceManager {
 		const message: McpNotification = {
 			jsonrpc: "2.0",
 			method: "selection_changed",
-			params,
+			params: params as unknown as Record<string, unknown>,
 		};
 
 		this.config.onSelectionChange(message);
 	}
 
 	private getAbsolutePath(relativePath: string): string {
-		const basePath =
-			(this.app.vault.adapter as any).getBasePath?.() || process.cwd();
+		const basePath = getVaultBasePath(this.app.vault.adapter);
 		return getAbsolutePath(relativePath, basePath);
 	}
 }

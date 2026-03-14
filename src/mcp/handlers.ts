@@ -3,6 +3,7 @@ import { WebSocket } from "ws";
 import { McpRequest, McpReplyFunction } from "./types";
 import { FileTools } from "../tools/file-tools";
 import { WorkspaceManager } from "../obsidian/workspace-manager";
+import { getVaultBasePath } from "../obsidian/utils";
 import { ToolRegistry } from "../shared/tool-registry";
 import { IdeHandler } from "../ide/ide-handler";
 
@@ -98,10 +99,11 @@ export class McpHandlers {
 				return this.handleGetWorkspaceInfo(req, reply);
 
 			// Standard MCP tool call
-			case "tools/call":
+			case "tools/call": {
 				// Use the appropriate tool registry based on request source
 				const toolRegistry = source === "ws" ? this.wsToolRegistry : this.httpToolRegistry;
 				return toolRegistry.handleToolCall(req, reply);
+			}
 
 			case "resources/list":
 				return this.handleResourcesList(req, reply);
@@ -114,13 +116,14 @@ export class McpHandlers {
 		}
 	}
 
-	private async handleInitialize(
+	private handleInitialize(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction
-	): Promise<void> {
+	): void {
 		try {
-			const { protocolVersion, capabilities, clientInfo } =
-				req.params || {};
+			// Log connection params for debugging
+		const params = req.params || {};
+		console.debug("[MCP] Initialize request received", Object.keys(params));
 
 			// Respond with server capabilities
 			reply({
@@ -151,18 +154,18 @@ export class McpHandlers {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to initialize: ${error.message}`,
+					message: `failed to initialize: ${(error as Error).message}`,
 				},
 			});
 		}
 	}
 
 
-	private async handleToolsList(
+	private handleToolsList(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction,
 		source: "ws" | "http"
-	): Promise<void> {
+	): void {
 		try {
 			// Use the appropriate tool registry based on request source
 			const toolRegistry = source === "ws" ? this.wsToolRegistry : this.httpToolRegistry;
@@ -176,16 +179,16 @@ export class McpHandlers {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to list tools: ${error.message}`,
+					message: `failed to list tools: ${(error as Error).message}`,
 				},
 			});
 		}
 	}
 
-	private async handlePromptsList(
+	private handlePromptsList(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction
-	): Promise<void> {
+	): void {
 		try {
 			reply({
 				result: {
@@ -196,16 +199,16 @@ export class McpHandlers {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to list prompts: ${error.message}`,
+					message: `failed to list prompts: ${(error as Error).message}`,
 				},
 			});
 		}
 	}
 
-	private async handleResourcesList(
+	private handleResourcesList(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction
-	): Promise<void> {
+	): void {
 		try {
 			// Obsidian doesn't have the same resource concept as other IDEs
 			// Return empty resources list
@@ -219,20 +222,19 @@ export class McpHandlers {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to list resources: ${error.message}`,
+					message: `failed to list resources: ${(error as Error).message}`,
 				},
 			});
 		}
 	}
 
-	private async handleGetWorkspaceInfo(
+	private handleGetWorkspaceInfo(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction
-	): Promise<void> {
+	): void {
 		try {
 			const vaultName = this.app.vault.getName();
-			const basePath =
-				(this.app.vault.adapter as any).getBasePath?.() || "unknown";
+			const basePath = getVaultBasePath(this.app.vault.adapter);
 			const fileCount = this.app.vault.getFiles().length;
 
 			reply({
@@ -247,7 +249,7 @@ export class McpHandlers {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to get workspace info: ${error.message}`,
+					message: `failed to get workspace info: ${(error as Error).message}`,
 				},
 			});
 		}

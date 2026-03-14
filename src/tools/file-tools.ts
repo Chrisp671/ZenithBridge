@@ -27,7 +27,7 @@ export class FileTools {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to read file: ${error.message}`,
+					message: `failed to read file: ${(error as Error).message}`,
 				},
 			});
 		}
@@ -59,7 +59,7 @@ export class FileTools {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to write file: ${error.message}`,
+					message: `failed to write file: ${(error as Error).message}`,
 				},
 			});
 		}
@@ -84,7 +84,7 @@ export class FileTools {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to list files: ${error.message}`,
+					message: `failed to list files: ${(error as Error).message}`,
 				},
 			});
 		}
@@ -99,7 +99,7 @@ export class FileTools {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to get open files: ${error.message}`,
+					message: `failed to get open files: ${(error as Error).message}`,
 				},
 			});
 		}
@@ -113,7 +113,7 @@ export class FileTools {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to get current file: ${error.message}`,
+					message: `failed to get current file: ${(error as Error).message}`,
 				},
 			});
 		}

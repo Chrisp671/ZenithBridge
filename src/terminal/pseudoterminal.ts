@@ -39,19 +39,18 @@ export class UnixPseudoterminal implements Pseudoterminal {
   public readonly onExit: Promise<NodeJS.Signals | number>;
 
   constructor(args: PseudoterminalArgs) {
-    this.shell = this.spawnPythonHelper(args);
-    this.onExit = this.shell.then(shell => 
-      new Promise(resolve => {
-        shell.once("exit", (code, signal) => {
-          resolve(code ?? signal ?? NaN);
-        });
-      })
-    );
+    const child = this.spawnPythonHelper(args);
+    this.shell = Promise.resolve(child);
+    this.onExit = new Promise(resolve => {
+      child.once("exit", (code, signal) => {
+        resolve(code ?? signal ?? NaN);
+      });
+    });
   }
 
-  private async spawnPythonHelper(args: PseudoterminalArgs): Promise<ChildProcess> {
+  private spawnPythonHelper(args: PseudoterminalArgs): ChildProcess {
     const python = args.pythonExecutable || "python3";
-    
+
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       ...args.env,
@@ -147,17 +146,16 @@ export class WindowsPseudoterminal implements Pseudoterminal {
   private scriptPath: string | null = null;
 
   constructor(args: PseudoterminalArgs) {
-    this.shell = this.spawnPythonHelper(args);
-    this.onExit = this.shell.then(shell =>
-      new Promise(resolve => {
-        shell.once("exit", (code, signal) => {
-          resolve(code ?? signal ?? NaN);
-        });
-      })
-    );
+    const child = this.spawnPythonHelper(args);
+    this.shell = Promise.resolve(child);
+    this.onExit = new Promise(resolve => {
+      child.once("exit", (code, signal) => {
+        resolve(code ?? signal ?? NaN);
+      });
+    });
   }
 
-  private async spawnPythonHelper(args: PseudoterminalArgs): Promise<ChildProcess> {
+  private spawnPythonHelper(args: PseudoterminalArgs): ChildProcess {
     const python = args.pythonExecutable || "python";
 
     // Write Python script to temp file to avoid Windows command-line quoting issues
@@ -280,17 +278,16 @@ export class ChildProcessPseudoterminal implements Pseudoterminal {
   public readonly onExit: Promise<NodeJS.Signals | number>;
 
   constructor(args: PseudoterminalArgs) {
-    this.shell = this.spawnChildProcess(args);
-    this.onExit = this.shell.then(shell => 
-      new Promise(resolve => {
-        shell.once("exit", (code, signal) => {
-          resolve(code ?? signal ?? NaN);
-        });
-      })
-    );
+    const child = this.spawnChildProcess(args);
+    this.shell = Promise.resolve(child);
+    this.onExit = new Promise(resolve => {
+      child.once("exit", (code, signal) => {
+        resolve(code ?? signal ?? NaN);
+      });
+    });
   }
 
-  private async spawnChildProcess(args: PseudoterminalArgs): Promise<ChildProcess> {
+  private spawnChildProcess(args: PseudoterminalArgs): ChildProcess {
     return spawn(args.executable, args.args || [], {
       cwd: args.cwd,
       env: {

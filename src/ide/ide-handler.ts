@@ -40,20 +40,20 @@ export class IdeHandler {
 		}
 	}
 
-	private async handleIdeConnected(
+	private handleIdeConnected(
 		req: McpRequest,
 		reply: McpReplyFunction
-	): Promise<boolean> {
+	): boolean {
 		const { pid } = req.params || {};
 		console.debug(`[IDE] Claude Code connected with PID: ${pid}`);
 		// No response needed for notifications
 		return true;
 	}
 
-	private async handleInitialized(
+	private handleInitialized(
 		req: McpRequest,
 		reply: McpReplyFunction
-	): Promise<boolean> {
+	): boolean {
 		// Send initial file context when Claude connects
 		setTimeout(() => {
 			console.debug("[IDE] Sending initial file context");

@@ -5,6 +5,7 @@ import { McpHttpServer, McpHttpServerConfig } from "./http-server";
 import { McpHandlers } from "./handlers";
 import { McpRequest, McpNotification } from "./types";
 import { WorkspaceManager } from "../obsidian/workspace-manager";
+import { getVaultBasePath } from "../obsidian/utils";
 import { ToolRegistry } from "../shared/tool-registry";
 import { GeneralTools, GENERAL_TOOL_DEFINITIONS } from "../tools/general-tools";
 import { IdeTools, IDE_TOOL_DEFINITIONS } from "../ide/ide-tools";
@@ -100,7 +101,7 @@ export class McpDualServer {
 			try {
 				const wsConfig: McpServerConfig = {
 					onMessage: (ws: WebSocket, request: McpRequest) => {
-						this.handlers.handleRequest(ws, request);
+						void this.handlers.handleRequest(ws, request);
 					},
 					onConnection: (ws: WebSocket) => {
 						console.debug("[MCP Dual] WebSocket client connected");
@@ -116,7 +117,7 @@ export class McpDualServer {
 
 				// Update lock file with workspace folders
 				if (this.config.workspaceManager) {
-					const basePath = (this.config.app.vault.adapter as any).getBasePath?.() || process.cwd();
+					const basePath = getVaultBasePath(this.config.app.vault.adapter);
 					this.wsServer.updateWorkspaceFolders(basePath);
 				}
 			} catch (error) {
@@ -145,8 +146,8 @@ export class McpDualServer {
 			} catch (error) {
 				console.error("[MCP Dual] Failed to start HTTP server:", error);
 				// Re-throw port-related errors so they can be handled by the main plugin
-				if (error.name === 'PortInUseError' || error.name === 'PermissionError' || 
-					error.message?.includes('EADDRINUSE') || error.message?.includes('EACCES')) {
+				if ((error as Error).name === 'PortInUseError' || (error as Error).name === 'PermissionError' ||
+					(error as Error).message?.includes('EADDRINUSE') || (error as Error).message?.includes('EACCES')) {
 					throw error;
 				}
 			}
@@ -225,19 +226,19 @@ export class McpDualServer {
 	 * Check if all tools are properly registered
 	 */
 	validateToolRegistration(): void {
-		console.log("[McpDualServer] Tool validation:");
-		console.log("  WebSocket/IDE tools:", {
+		console.debug("[McpDualServer] Tool validation:");
+		console.debug("  WebSocket/IDE tools:", {
 			total: this.wsToolRegistry.getRegisteredToolNames().length,
-			general: this.wsToolRegistry.getToolDefinitions("general").length + 
-					 this.wsToolRegistry.getToolDefinitions("file").length + 
-					 this.wsToolRegistry.getToolDefinitions("workspace").length,
+			general: this.wsToolRegistry.getToolDefinitions("general").length +
+				this.wsToolRegistry.getToolDefinitions("file").length +
+				this.wsToolRegistry.getToolDefinitions("workspace").length,
 			ideSpecific: this.wsToolRegistry.getToolDefinitions("ide-specific").length,
 		});
-		console.log("  HTTP/MCP tools:", {
+		console.debug("  HTTP/MCP tools:", {
 			total: this.httpToolRegistry.getRegisteredToolNames().length,
-			general: this.httpToolRegistry.getToolDefinitions("general").length + 
-					 this.httpToolRegistry.getToolDefinitions("file").length + 
-					 this.httpToolRegistry.getToolDefinitions("workspace").length,
+			general: this.httpToolRegistry.getToolDefinitions("general").length +
+				this.httpToolRegistry.getToolDefinitions("file").length +
+				this.httpToolRegistry.getToolDefinitions("workspace").length,
 			ideSpecific: this.httpToolRegistry.getToolDefinitions("ide-specific").length,
 		});
 	}

@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
@@ -28,8 +29,6 @@ export function getClaudeConfigDir(): string {
 
     // For now, we'll check if the modern config directory exists, otherwise fall back to legacy
     // This matches Claude Code's behavior
-    const fs = require('fs');
-    
     try {
         // Check if modern config directory exists
         if (fs.existsSync(modernConfigDir)) {

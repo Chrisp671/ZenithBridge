@@ -121,7 +121,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "Claude Code Settings" });
+		new Setting(containerEl).setName("Claude Code settings").setHeading();
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);
@@ -129,10 +129,10 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 	}
 
 	private displayServerSettings(containerEl: HTMLElement): void {
-		containerEl.createEl("h3", { text: "MCP Server Configuration" });
+		new Setting(containerEl).setName("MCP server configuration").setHeading();
 
 		new Setting(containerEl)
-			.setName("Enable WebSocket Server")
+			.setName("Enable WebSocket server")
 			.setDesc(
 				"Enable WebSocket server for Claude Code IDE integration. This allows auto-discovery via lock files."
 			)
@@ -148,7 +148,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Enable HTTP/SSE Server")
+			.setName("Enable HTTP/SSE server")
 			.setDesc(
 				"Enable HTTP/SSE server for Claude Desktop and other MCP clients. Required for manual MCP client configuration."
 			)
@@ -164,7 +164,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("HTTP Server Port")
+			.setName("HTTP server port")
 			.setDesc(
 				"Port for the HTTP/SSE MCP server. Default is 22360. Changes apply when you leave this field."
 			)
@@ -198,10 +198,10 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 	}
 
 	private displayTerminalSettings(containerEl: HTMLElement): void {
-		containerEl.createEl("h3", { text: "Terminal Configuration" });
+		new Setting(containerEl).setName("Terminal configuration").setHeading();
 
 		new Setting(containerEl)
-			.setName("Enable Embedded Terminal")
+			.setName("Enable embedded terminal")
 			.setDesc(
 				"Enable the built-in terminal feature within Obsidian. Requires plugin reload to fully apply."
 			)
@@ -278,7 +278,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 					});
 			});
 
-		containerEl.createEl("h4", { text: "Built-in Profiles" });
+		new Setting(containerEl).setName("Built-in profiles").setHeading();
 		for (const profile of BUILTIN_TERMINAL_PROFILES) {
 			const builtInCard = containerEl.createDiv({
 				cls: "terminal-profile-card",
@@ -296,7 +296,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 				);
 		}
 
-		containerEl.createEl("h4", { text: "Custom Profiles" });
+		new Setting(containerEl).setName("Custom profiles").setHeading();
 		const customProfiles = this.plugin.settings.terminalProfiles;
 		if (customProfiles.length === 0) {
 			containerEl.createEl("p", {
@@ -480,85 +480,79 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const statusSection = containerEl.createEl("div", {
 			cls: "mcp-server-status",
 		});
-		statusSection.createEl("h3", { text: "MCP Server Status" });
+		new Setting(statusSection).setName("MCP server status").setHeading();
 
 		const serverInfo = this.plugin.mcpServer?.getServerInfo() || {};
 
 		const wsContainer = statusSection.createEl("div", {
 			cls: "server-status-item",
 		});
-		wsContainer.createEl("h4", { text: "WebSocket Server (Claude Code)" });
+		new Setting(wsContainer).setName("WebSocket server (Claude Code)").setHeading();
 
 		const wsStatus = wsContainer.createEl("div", { cls: "status-line" });
 		if (this.plugin.settings.enableWebSocketServer && serverInfo.wsPort) {
-			wsStatus.innerHTML = `
-				<span class="status-indicator status-running">●</span>
-				<span class="status-text">Running on port ${serverInfo.wsPort}</span>
-				<span class="status-clients">(${serverInfo.wsClients || 0} clients)</span>
-			`;
+			wsStatus.createEl("span", { cls: "status-indicator status-running", text: "\u25CF" });
+			wsStatus.createEl("span", { cls: "status-text", text: `Running on port ${serverInfo.wsPort}` });
+			wsStatus.createEl("span", { cls: "status-clients", text: `(${serverInfo.wsClients || 0} clients)` });
 
 			const wsDetails = wsContainer.createEl("div", {
 				cls: "status-details",
 			});
 			const configDir = getClaudeConfigDir();
-			wsDetails.innerHTML = `
-				<div>• Auto-discovery enabled via lock files</div>
-				<div>• Lock file: <code>${configDir}/ide/${serverInfo.wsPort}.lock</code></div>
-				<div>• Use <code>claude</code> CLI and select "Obsidian" from <code>/ide</code> list</div>
-			`;
+			const detail1 = wsDetails.createEl("div");
+			detail1.setText("\u2022 Auto-discovery enabled via lock files");
+			const detail2 = wsDetails.createEl("div");
+			detail2.appendText("\u2022 Lock file: ");
+			detail2.createEl("code", { text: `${configDir}/ide/${serverInfo.wsPort}.lock` });
+			const detail3 = wsDetails.createEl("div");
+			detail3.appendText("\u2022 Use ");
+			detail3.createEl("code", { text: "claude" });
+			detail3.appendText(" CLI and select \"Obsidian\" from ");
+			detail3.createEl("code", { text: "/ide" });
+			detail3.appendText(" list");
 		} else if (!this.plugin.settings.enableWebSocketServer) {
-			wsStatus.innerHTML = `
-				<span class="status-indicator status-disabled">●</span>
-				<span class="status-text">Disabled</span>
-			`;
+			wsStatus.createEl("span", { cls: "status-indicator status-disabled", text: "\u25CF" });
+			wsStatus.createEl("span", { cls: "status-text", text: "Disabled" });
 		} else {
-			wsStatus.innerHTML = `
-				<span class="status-indicator status-error">●</span>
-				<span class="status-text">Failed to start</span>
-			`;
+			wsStatus.createEl("span", { cls: "status-indicator status-error", text: "\u25CF" });
+			wsStatus.createEl("span", { cls: "status-text", text: "Failed to start" });
 		}
 
 		const httpContainer = statusSection.createEl("div", {
 			cls: "server-status-item",
 		});
-		httpContainer.createEl("h4", {
-			text: "MCP Server (HTTP/SSE transport)",
-		});
+		new Setting(httpContainer).setName("MCP server (HTTP/SSE transport)").setHeading();
 
 		const httpStatus = httpContainer.createEl("div", {
 			cls: "status-line",
 		});
 		if (this.plugin.settings.enableHttpServer && serverInfo.httpPort) {
-			httpStatus.innerHTML = `
-				<span class="status-indicator status-running">●</span>
-				<span class="status-text">Running on port ${serverInfo.httpPort}</span>
-				<span class="status-clients">(${serverInfo.httpClients || 0} clients)</span>
-			`;
+			httpStatus.createEl("span", { cls: "status-indicator status-running", text: "\u25CF" });
+			httpStatus.createEl("span", { cls: "status-text", text: `Running on port ${serverInfo.httpPort}` });
+			httpStatus.createEl("span", { cls: "status-clients", text: `(${serverInfo.httpClients || 0} clients)` });
 
 			const httpDetails = httpContainer.createEl("div", {
 				cls: "status-details",
 			});
-			httpDetails.innerHTML = `
-				<div>• SSE Stream: <code>http://localhost:${serverInfo.httpPort}/sse</code></div>
-				<div>• Add to Claude Desktop config: <code>"url": "http://localhost:${serverInfo.httpPort}/sse"</code></div>
-			`;
+			const httpDetail1 = httpDetails.createEl("div");
+			httpDetail1.appendText("\u2022 SSE Stream: ");
+			httpDetail1.createEl("code", { text: `http://localhost:${serverInfo.httpPort}/sse` });
+			const httpDetail2 = httpDetails.createEl("div");
+			httpDetail2.appendText("\u2022 Add to Claude Desktop config: ");
+			httpDetail2.createEl("code", { text: `"url": "http://localhost:${serverInfo.httpPort}/sse"` });
 		} else if (!this.plugin.settings.enableHttpServer) {
-			httpStatus.innerHTML = `
-				<span class="status-indicator status-disabled">●</span>
-				<span class="status-text">Disabled</span>
-			`;
+			httpStatus.createEl("span", { cls: "status-indicator status-disabled", text: "\u25CF" });
+			httpStatus.createEl("span", { cls: "status-text", text: "Disabled" });
 		} else {
-			httpStatus.innerHTML = `
-				<span class="status-indicator status-error">●</span>
-				<span class="status-text">Failed to start</span>
-			`;
+			httpStatus.createEl("span", { cls: "status-indicator status-error", text: "\u25CF" });
+			httpStatus.createEl("span", { cls: "status-text", text: "Failed to start" });
 		}
 
 		const refreshContainer = statusSection.createEl("div", {
 			cls: "status-refresh",
 		});
 		const refreshButton = refreshContainer.createEl("button", {
-			text: "Refresh Status",
+			text: "Refresh status",
 			cls: "mod-cta",
 		});
 		refreshButton.addEventListener("click", () => {

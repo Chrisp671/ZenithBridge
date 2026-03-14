@@ -15,6 +15,7 @@ import {
 } from "./pseudoterminal";
 import { PythonManager } from "./python-detection";
 import type ClaudeMcpPlugin from "main";
+import { getVaultBasePath } from "../obsidian/utils";
 import {
 	BUILTIN_CLAUDE_PROFILE_ID,
 	TerminalProfile,
@@ -88,9 +89,7 @@ export class ClaudeTerminalView extends ItemView {
 		const terminalEl = container.createDiv({
 			cls: "claude-terminal-container",
 		});
-		terminalEl.style.width = "100%";
-		terminalEl.style.height = "100%";
-		terminalEl.style.padding = "8px";
+		terminalEl.addClass("claude-terminal-inner");
 
 		this.terminal.open(terminalEl);
 		this.plugin
@@ -187,9 +186,8 @@ export class ClaudeTerminalView extends ItemView {
 	private async startShell(): Promise<void> {
 		try {
 			const vaultPath =
-				(this.app.vault.adapter as any).basePath ||
-				(this.app.vault.adapter as any).getBasePath?.() ||
-				process.cwd();
+				(this.app.vault.adapter as unknown as { basePath?: string }).basePath ||
+				getVaultBasePath(this.app.vault.adapter);
 
 			const isWindows = process.platform === "win32";
 			const shell = isWindows
@@ -227,9 +225,9 @@ export class ClaudeTerminalView extends ItemView {
 
 			console.debug("[Terminal] Using child_process fallback");
 			await this.startChildProcess(shell, args, vaultPath);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("[Terminal] Failed to start shell:", error);
-			this.terminal.write(`Failed to start shell: ${error.message}\r\n`);
+			this.terminal.write(`Failed to start shell: ${(error as Error).message}\r\n`);
 		}
 	}
 

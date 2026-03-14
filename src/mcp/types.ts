@@ -2,20 +2,20 @@ export interface McpRequest {
 	jsonrpc: "2.0";
 	id: string | number;
 	method: string;
-	params?: any;
+	params?: Record<string, unknown>;
 }
 
 export interface McpResponse {
 	jsonrpc: "2.0";
 	id: string | number;
-	result?: any;
+	result?: unknown;
 	error?: { code: number; message: string };
 }
 
 export interface McpNotification {
 	jsonrpc: "2.0";
 	method: string;
-	params?: any;
+	params?: Record<string, unknown>;
 }
 
 export interface SelectionRange {
@@ -36,7 +36,7 @@ export interface Tool {
 	description: string;
 	inputSchema: {
 		type: "object";
-		properties: Record<string, any>;
+		properties: Record<string, unknown>;
 	};
 }
 

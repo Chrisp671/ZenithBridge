@@ -72,10 +72,10 @@ export class IdeTools {
 		return [
 			{
 				name: "openDiff",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to open a diff view, but Obsidian doesn't have built-in diff functionality
 					// Just acknowledge the request successfully to prevent errors
-					const { old_file_path, new_file_path, new_file_contents, tab_name } = args || {};
+					const { old_file_path, tab_name } = args || {};
 					
 					console.debug(`[MCP] OpenDiff requested for ${old_file_path} (tab: ${tab_name})`);
 					
@@ -93,7 +93,7 @@ export class IdeTools {
 			},
 			{
 				name: "close_tab",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close a tab, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					const { tab_name } = args || {};
@@ -114,7 +114,7 @@ export class IdeTools {
 			},
 			{
 				name: "closeAllDiffTabs",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close all diff tabs, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					console.debug(`[MCP] CloseAllDiffTabs requested`);
@@ -133,7 +133,7 @@ export class IdeTools {
 			},
 			{
 				name: "getDiagnostics",
-				handler: async (args: any, reply: McpReplyFunction) => {
+				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						// For Obsidian, we don't have traditional LSP diagnostics
 						// but we can provide basic system/vault diagnostic information
@@ -150,11 +150,11 @@ export class IdeTools {
 								systemInfo: diagnostics,
 							},
 						});
-					} catch (error) {
+					} catch (error: unknown) {
 						reply({
 							error: {
 								code: -32603,
-								message: `failed to get diagnostics: ${error.message}`,
+								message: `failed to get diagnostics: ${(error as Error).message}`,
 							},
 						});
 					}
