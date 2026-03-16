@@ -2,7 +2,7 @@ import { Tool, McpRequest, McpReplyFunction } from "../mcp/types";
 
 export interface ToolImplementation {
 	name: string;
-	handler: (args: Record<string, unknown>, reply: McpReplyFunction) => void | Promise<void>;
+	handler: (args: Record<string, unknown>, reply: McpReplyFunction) => Promise<void>;
 }
 
 export interface ToolDefinition extends Tool {
@@ -43,13 +43,9 @@ export class ToolRegistry {
 		if (!tool) {
 			console.error(`[ToolRegistry] Unknown tool called: ${toolName}`, toolArgs);
 			return reply({
-				result: {
-					content: [
-						{
-							type: "text",
-							text: `Tool '${toolName}' is not registered`,
-						},
-					],
+				error: {
+					code: -32601,
+					message: `Tool '${toolName}' is not registered`,
 				},
 			});
 		}

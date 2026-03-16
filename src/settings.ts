@@ -121,7 +121,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		new Setting(containerEl).setName("Servers").setHeading();
+		new Setting(containerEl).setName("Claude Code settings").setHeading();
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);
@@ -129,7 +129,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 	}
 
 	private displayServerSettings(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName("Server configuration").setHeading();
+		new Setting(containerEl).setName("MCP server configuration").setHeading();
 
 		new Setting(containerEl)
 			.setName("Enable WebSocket server")
@@ -148,7 +148,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Enable HTTP server")
+			.setName("Enable HTTP/SSE server")
 			.setDesc(
 				"Enable the HTTP server for external clients. Required for manual client configuration."
 			)
@@ -480,14 +480,14 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const statusSection = containerEl.createEl("div", {
 			cls: "mcp-server-status",
 		});
-		new Setting(statusSection).setName("Server status").setHeading();
+		new Setting(statusSection).setName("MCP server status").setHeading();
 
 		const serverInfo = this.plugin.mcpServer?.getServerInfo() || {};
 
 		const wsContainer = statusSection.createEl("div", {
 			cls: "server-status-item",
 		});
-		new Setting(wsContainer).setName("WebSocket server").setHeading();
+		new Setting(wsContainer).setName("WebSocket server (Claude Code)").setHeading();
 
 		const wsStatus = wsContainer.createEl("div", { cls: "status-line" });
 		if (this.plugin.settings.enableWebSocketServer && serverInfo.wsPort) {
@@ -500,15 +500,15 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			});
 			const configDir = getClaudeConfigDir();
 			const detail1 = wsDetails.createEl("div");
-			detail1.setText("Auto-discovery enabled via lock files");
+			detail1.setText("\u2022 Auto-discovery enabled via lock files");
 			const detail2 = wsDetails.createEl("div");
 			detail2.appendText("\u2022 Lock file: ");
 			detail2.createEl("code", { text: `${configDir}/ide/${serverInfo.wsPort}.lock` });
 			const detail3 = wsDetails.createEl("div");
 			detail3.appendText("\u2022 Use ");
-			detail3.createEl("code", { text: "Claude" });
+			detail3.createEl("code", { text: "claude" });
 			detail3.appendText(" CLI and select \"Obsidian\" from ");
-			detail3.createEl("code", { text: "/IDE" });
+			detail3.createEl("code", { text: "/ide" });
 			detail3.appendText(" list");
 		} else if (!this.plugin.settings.enableWebSocketServer) {
 			wsStatus.createEl("span", { cls: "status-indicator status-disabled", text: "\u25CF" });
@@ -521,7 +521,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const httpContainer = statusSection.createEl("div", {
 			cls: "server-status-item",
 		});
-		new Setting(httpContainer).setName("HTTP server").setHeading();
+		new Setting(httpContainer).setName("MCP server (HTTP/SSE transport)").setHeading();
 
 		const httpStatus = httpContainer.createEl("div", {
 			cls: "status-line",
