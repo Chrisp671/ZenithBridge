@@ -3,7 +3,6 @@ import * as obsidian from "obsidian";
 import { McpReplyFunction } from "../mcp/types";
 import { ToolImplementation, ToolDefinition } from "../shared/tool-registry";
 import { normalizePath } from "../obsidian/utils";
-
 // General tool definitions (non-IDE specific)
 export const GENERAL_TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
@@ -125,13 +124,10 @@ export const GENERAL_TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "obsidian_api",
 		description: `Use the Obsidian API directly. This is an experimental tool and should be used with caution. Only use this tool when the other Obsidian tools are insufficient.
-
 IMPORTANT: Be very careful when using this tool. It provides full, unrestricted access to the Obsidian API, which allows destructive actions.
-
 Definitions:
 - \`app\` is the Obsidian App instance.
 - \`obsidian\` is the 'obsidian' module import. I.e. the result of \`require('obsidian')\` or \`import * as obsidian from 'obsidian'\`.
-
 How to use:
 - Write a function body as a string that takes the Obsidian \`app\` instance as the first argument and the \`obsidian\` module as the second argument.
   - Example: \`"return typeof app === undefined;"\`. This will return \`false\`, since \`app\` is the first argument and is defined.
@@ -156,11 +152,9 @@ How to use:
 		},
 	},
 ];
-
 // General tool implementations
 export class GeneralTools {
 	constructor(private app: App) {}
-
 	createImplementations(): ToolImplementation[] {
 		return [
 			{
@@ -187,14 +181,12 @@ export class GeneralTools {
 					const { pattern } = args || {};
 					const allFiles = this.app.vault.getFiles();
 					let filteredFiles = allFiles.map((file) => file.path);
-
 					if (pattern && typeof pattern === "string") {
 						const regex = new RegExp(pattern);
 						filteredFiles = filteredFiles.filter((path) =>
 							regex.test(path)
 						);
 					}
-
 					return reply({
 						result: {
 							content: [
@@ -219,14 +211,12 @@ export class GeneralTools {
 								error: { code: -32602, message: "invalid path parameter" },
 							});
 						}
-
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
 							return reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
-
 						// Check if path is a directory by trying to list files
 						const allFiles = this.app.vault.getFiles();
 						const isDirectory = allFiles.some(
@@ -235,7 +225,6 @@ export class GeneralTools {
 								(normalizedPath.endsWith("/") &&
 									file.path.startsWith(normalizedPath))
 						);
-
 						if (isDirectory || normalizedPath.endsWith("/")) {
 							// List directory contents
 							const dirFiles = allFiles
@@ -249,7 +238,6 @@ export class GeneralTools {
 									);
 								})
 								.map((file) => file.path);
-
 							return reply({
 								result: {
 									content: [
@@ -267,7 +255,6 @@ export class GeneralTools {
 							const content = await this.app.vault.adapter.read(
 								normalizedPath
 							);
-
 							let displayContent = content;
 							if (
 								view_range &&
@@ -281,7 +268,6 @@ export class GeneralTools {
 									endLine === -1
 										? lines.length
 										: Math.min(lines.length, endLine);
-
 								displayContent = lines
 									.slice(start, end)
 									.map((line, index) => `${start + index + 1}: ${line}`)
@@ -293,7 +279,6 @@ export class GeneralTools {
 									.map((line, index) => `${index + 1}: ${line}`)
 									.join("\n");
 							}
-
 							return reply({
 								result: {
 									content: [
@@ -330,16 +315,13 @@ export class GeneralTools {
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
-
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
 							return reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
-
 						const content = await this.app.vault.adapter.read(normalizedPath);
-
 						// Check for exact matches
 						const matches = content.split(old_str).length - 1;
 						if (matches === 0) {
@@ -357,10 +339,8 @@ export class GeneralTools {
 								},
 							});
 						}
-
 						const newContent = content.replace(old_str, new_str);
 						await this.app.vault.adapter.write(normalizedPath, newContent);
-
 						return reply({
 							result: {
 								content: [
@@ -395,14 +375,12 @@ export class GeneralTools {
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
-
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
 							return reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
-
 						// Check if file already exists
 						try {
 							await this.app.vault.adapter.read(normalizedPath);
@@ -413,12 +391,10 @@ export class GeneralTools {
 										"File already exists. Use str_replace to modify existing files.",
 								},
 							});
-						} catch (_readError: unknown) {
+						} catch {
 							// File doesn't exist, which is what we want for create
 						}
-
 						await this.app.vault.adapter.write(normalizedPath, file_text);
-
 						return reply({
 							result: {
 								content: [
@@ -454,17 +430,14 @@ export class GeneralTools {
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
-
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
 							return reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
-
 						const content = await this.app.vault.adapter.read(normalizedPath);
 						const lines = content.split("\n");
-
 						// Validate insert_line
 						if (insert_line < 0 || insert_line > lines.length) {
 							return reply({
@@ -474,14 +447,11 @@ export class GeneralTools {
 								},
 							});
 						}
-
 						// Insert the new text
 						const newLines = new_str.split("\n");
 						lines.splice(insert_line, 0, ...newLines);
-
 						const newContent = lines.join("\n");
 						await this.app.vault.adapter.write(normalizedPath, newContent);
-
 						return reply({
 							result: {
 								content: [
@@ -516,12 +486,10 @@ export class GeneralTools {
 								},
 							});
 						}
-
 						// Create and execute the function
-						// eslint-disable-next-line no-new-func
+						// eslint-disable-next-line @typescript-eslint/no-implied-eval -- Required for the obsidian_api tool to execute user-provided function bodies
 						const fn = new Function("app", "obsidian", functionBody);
 						let result = fn(this.app, obsidian);
-
 						// Check if the result is a Promise and await it if so
 						const isThenable =
 							typeof result === "object" &&
@@ -530,7 +498,6 @@ export class GeneralTools {
 						if (result instanceof Promise || isThenable) {
 							result = await result;
 						}
-
 						// Serialize the result
 						let serializedResult: string;
 						try {
@@ -538,10 +505,9 @@ export class GeneralTools {
 								result !== undefined
 									? JSON.stringify(result, null, 2)
 									: "undefined";
-						} catch (_serializationError: unknown) {
+						} catch {
 							serializedResult = `[Non-serializable result: ${typeof result}]`;
 						}
-
 						return reply({
 							result: {
 								content: [
@@ -556,9 +522,7 @@ export class GeneralTools {
 						reply({
 							error: {
 								code: -32603,
-								message: `Error executing function: ${
-									(error as Error).message || error
-								}`,
+								message: `Error executing function: ${(error as Error).message}`,
 							},
 						});
 					}

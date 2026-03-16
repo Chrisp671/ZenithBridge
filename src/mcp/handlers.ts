@@ -42,7 +42,7 @@ export class McpHandlers {
 		};
 
 		// WebSocket requests use the WebSocket tool registry
-		return this.handleRequestGeneric(req, reply, "ws");
+		return await this.handleRequestGeneric(req, reply, "ws");
 	}
 
 	async handleHttpRequest(
@@ -51,7 +51,7 @@ export class McpHandlers {
 	): Promise<void> {
 		console.debug(`[MCP HTTP] Handling request: ${req.method}`);
 		// HTTP requests use the HTTP tool registry
-		return this.handleRequestGeneric(req, reply, "http");
+		return await this.handleRequestGeneric(req, reply, "http");
 	}
 
 	private async handleRequestGeneric(
@@ -61,7 +61,7 @@ export class McpHandlers {
 	): Promise<void> {
 		// First check if it's an IDE-specific method
 		if (this.ideHandler.isIdeMethod(req.method)) {
-			const handled = await this.ideHandler.handleRequest(req, reply);
+			const handled = this.ideHandler.handleRequest(req, reply);
 			if (handled) return;
 		}
 

@@ -134,7 +134,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Enable WebSocket server")
 			.setDesc(
-				"Enable WebSocket server for Claude Code IDE integration. This allows auto-discovery via lock files."
+				"Enable the WebSocket server for IDE integration. This allows auto-discovery via lock files."
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -150,7 +150,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Enable HTTP/SSE server")
 			.setDesc(
-				"Enable HTTP/SSE server for Claude Desktop and other MCP clients. Required for manual MCP client configuration."
+				"Enable the HTTP server for external clients. Required for manual client configuration."
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -166,7 +166,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("HTTP server port")
 			.setDesc(
-				"Port for the HTTP/SSE MCP server. Default is 22360. Changes apply when you leave this field."
+				"Port for the HTTP server. Default is 22360. Changes apply when you leave this field."
 			)
 			.addText((text) => {
 				text
@@ -300,7 +300,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const customProfiles = this.plugin.settings.terminalProfiles;
 		if (customProfiles.length === 0) {
 			containerEl.createEl("p", {
-				text: "No custom profiles yet. Duplicate the Claude preset or add one below.",
+				text: "No custom profiles yet. Duplicate a built-in preset or add one below.",
 				cls: "terminal-profile-empty",
 			});
 		}
@@ -379,7 +379,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			.setName("Launch command")
 			.setDesc("Raw shell command to run after the shell opens.")
 			.addText((text) =>
-				text.setPlaceholder("kimi").setValue(profile.launchCommand).onChange(
+				text.setPlaceholder("Command").setValue(profile.launchCommand).onChange(
 					async (value) => {
 						await this.updateCustomProfile(profile.id, {
 							launchCommand: value,
@@ -390,10 +390,10 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 
 		new Setting(profileCard)
 			.setName("Environment")
-			.setDesc("One KEY=VALUE entry per line.")
+			.setDesc("One entry per line in key=value format.")
 			.addTextArea((textArea) =>
 				textArea
-					.setPlaceholder("OPENAI_API_KEY=...\nKIMI_API_KEY=...")
+					.setPlaceholder("Key=value")
 					.setValue(stringifyEnv(profile.env))
 					.onChange(async (value) => {
 						await this.updateCustomProfile(profile.id, {

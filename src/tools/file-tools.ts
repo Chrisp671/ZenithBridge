@@ -65,7 +65,7 @@ export class FileTools {
 		}
 	}
 
-	async handleListFiles(req: McpRequest, reply: McpReplyFunction): Promise<void> {
+	handleListFiles(req: McpRequest, reply: McpReplyFunction): void {
 		try {
 			const { pattern } = req.params || {};
 			const allFiles = this.app.vault.getFiles();
@@ -90,7 +90,7 @@ export class FileTools {
 		}
 	}
 
-	async handleGetOpenFiles(req: McpRequest, reply: McpReplyFunction): Promise<void> {
+	handleGetOpenFiles(req: McpRequest, reply: McpReplyFunction): void {
 		try {
 			const activeFile = this.app.workspace.getActiveFile();
 			const openFiles = activeFile ? [activeFile.path] : [];
@@ -105,7 +105,7 @@ export class FileTools {
 		}
 	}
 
-	async handleGetCurrentFile(req: McpRequest, reply: McpReplyFunction): Promise<void> {
+	handleGetCurrentFile(req: McpRequest, reply: McpReplyFunction): void {
 		try {
 			const activeFile = this.app.workspace.getActiveFile();
 			reply({ result: activeFile ? activeFile.path : null });

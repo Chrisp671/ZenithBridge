@@ -112,7 +112,7 @@ export class McpDualServer {
 				};
 
 				this.wsServer = new McpServer(wsConfig);
-				result.wsPort = await this.wsServer.start();
+				result.wsPort = this.wsServer.start();
 				console.debug(`[MCP Dual] WebSocket server started on port ${result.wsPort}`);
 
 				// Update lock file with workspace folders
@@ -130,7 +130,7 @@ export class McpDualServer {
 			try {
 				const httpConfig: McpHttpServerConfig = {
 					onMessage: (request: McpRequest, reply) => {
-						this.handlers.handleHttpRequest(request, reply);
+						void this.handlers.handleHttpRequest(request, reply);
 					},
 					onConnection: () => {
 						console.debug(`[MCP Dual] HTTP client connected`);

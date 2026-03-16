@@ -77,7 +77,7 @@ export class IdeTools {
 					// Just acknowledge the request successfully to prevent errors
 					const { old_file_path, tab_name } = args || {};
 					
-					console.debug(`[MCP] OpenDiff requested for ${old_file_path} (tab: ${tab_name})`);
+					console.debug(`[MCP] OpenDiff requested for ${String(old_file_path)} (tab: ${String(tab_name)})`);
 					
 					return reply({
 						result: {
@@ -98,7 +98,7 @@ export class IdeTools {
 					// Just acknowledge the request successfully
 					const { tab_name } = args || {};
 					
-					console.debug(`[MCP] CloseTab requested for ${tab_name}`);
+					console.debug(`[MCP] CloseTab requested for ${String(tab_name)}`);
 					
 					return reply({
 						result: {

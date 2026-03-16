@@ -46,15 +46,16 @@ export class McpHttpServer {
 	}
 
 	/** returns port number */
-	async start(port = 22360): Promise<number> {
+	start(port = 22360): Promise<number> {
 		return new Promise((resolve, reject) => {
 			this.server = http.createServer((req, res) => {
-				this.handleRequest(req, res);
+				void this.handleRequest(req, res);
 			});
 
 			// Increase keep-alive timeout to reduce connection churn
 			this.server.keepAliveTimeout = 65000;
 			this.server.headersTimeout = 70000;
+
 
 			this.server.on("error", (error: NodeJS.ErrnoException) => {
 				if (error.code === "EADDRINUSE") {
@@ -85,6 +86,7 @@ export class McpHttpServer {
 				this.cleanupInterval = setInterval(() => {
 					this.cleanupExpiredSessions();
 				}, SESSION_CLEANUP_INTERVAL_MS);
+
 
 				resolve(this.port);
 			});
@@ -188,7 +190,7 @@ export class McpHttpServer {
 		// Route to appropriate endpoint
 		if (url.pathname === "/sse") {
 			if (req.method === "GET") {
-				await this.handleSSEConnection(req, res);
+				this.handleSSEConnection(req, res);
 			} else {
 				res.writeHead(405, { "Content-Type": "application/json" });
 				res.end(
@@ -330,7 +332,7 @@ export class McpHttpServer {
 		try {
 			const parsed = JSON.parse(body);
 			messages = Array.isArray(parsed) ? parsed : [parsed];
-		} catch (error) {
+		} catch {
 			res.writeHead(400, { "Content-Type": "application/json" });
 			res.end(JSON.stringify({
 				jsonrpc: "2.0",
@@ -381,6 +383,8 @@ export class McpHttpServer {
 
 		for (const request of messages) {
 			if (request.method && request.id !== undefined) {
+				const requestId = request.id;
+				const requestMethod = request.method;
 				const reply: HttpReplyFunction = (msg) => {
 					const response: McpResponse = {
 						jsonrpc: "2.0",

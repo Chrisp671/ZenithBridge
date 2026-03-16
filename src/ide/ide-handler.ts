@@ -24,10 +24,10 @@ export class IdeHandler {
 	/**
 	 * Handle IDE-specific requests
 	 */
-	async handleRequest(
+	handleRequest(
 		req: McpRequest,
 		reply: McpReplyFunction
-	): Promise<boolean> {
+	): boolean {
 		switch (req.method) {
 			case "ide_connected":
 				return this.handleIdeConnected(req, reply);
@@ -45,7 +45,7 @@ export class IdeHandler {
 		reply: McpReplyFunction
 	): boolean {
 		const { pid } = req.params || {};
-		console.debug(`[IDE] Claude Code connected with PID: ${pid}`);
+		console.debug(`[IDE] Claude Code connected with PID: ${String(pid)}`);
 		// No response needed for notifications
 		return true;
 	}

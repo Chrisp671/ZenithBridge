@@ -56,7 +56,7 @@ export class ToolRegistry {
 			reply({
 				error: {
 					code: -32603,
-					message: `failed to call tool ${name}: ${(error as Error).message}`,
+					message: `failed to call tool ${String(name)}: ${(error as Error).message}`,
 				},
 			});
 		}

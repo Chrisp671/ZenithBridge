@@ -42,7 +42,7 @@ export function getClaudeConfigDir(): string {
         
         // If neither exists, use the modern location (Claude Code will create it)
         return modernConfigDir;
-    } catch (error) {
+    } catch {
         // If we can't check file system, default to modern location
         return modernConfigDir;
     }

@@ -185,9 +185,7 @@ export class ClaudeTerminalView extends ItemView {
 
 	private async startShell(): Promise<void> {
 		try {
-			const vaultPath =
-				(this.app.vault.adapter as unknown as { basePath?: string }).basePath ||
-				getVaultBasePath(this.app.vault.adapter);
+			const vaultPath = getVaultBasePath(this.app.vault.adapter);
 
 			const isWindows = process.platform === "win32";
 			const shell = isWindows
@@ -217,7 +215,7 @@ export class ClaudeTerminalView extends ItemView {
 						error
 					);
 					new Notice(
-						"Terminal: PTY not available. Install Python 3.7+ (Windows: also run 'pip install pywinpty') for full terminal support.",
+						"Terminal pseudo-terminal not available. Install python 3.7+ for full terminal support.",
 						8000
 					);
 				}

@@ -26,7 +26,7 @@ export class McpServer {
 		this.config = config;
 	}
 
-	async start(): Promise<number> {
+	start(): number {
 		// Generate a unique auth token for this session
 		this.authToken = crypto.randomUUID();
 
