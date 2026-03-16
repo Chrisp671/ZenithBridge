@@ -465,20 +465,19 @@ export class McpHttpServer {
 	private async readRequestBody(req: http.IncomingMessage): Promise<string> {
 		const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 		return new Promise((resolve, reject) => {
-			let body = "";
+			const chunks: Buffer[] = [];
 			let size = 0;
-			req.on("data", (chunk: Buffer | string) => {
-				const str = chunk.toString();
-				size += str.length;
+			req.on("data", (chunk: Buffer) => {
+				size += chunk.length;
 				if (size > MAX_BODY_SIZE) {
 					req.destroy();
 					reject(new Error("Request body too large"));
 					return;
 				}
-				body += str;
+				chunks.push(chunk);
 			});
 			req.on("end", () => {
-				resolve(body);
+				resolve(Buffer.concat(chunks).toString());
 			});
 			req.on("error", reject);
 		});
@@ -486,23 +485,30 @@ export class McpHttpServer {
 
 	private cleanupExpiredSessions(): void {
 		const now = Date.now();
+		const expiredIds = new Set<string>();
 		for (const [id, session] of this.sessions) {
 			if (now - session.lastAccessedAt > SESSION_TTL_MS) {
-				// Close associated streams
-				for (const stream of this.activeStreams) {
-					if (stream.sessionId === id && !stream.response.destroyed) {
-						stream.response.end();
-					}
-				}
-				// Remove streams for this session
-				for (const stream of this.activeStreams) {
-					if (stream.sessionId === id) {
-						this.activeStreams.delete(stream);
-					}
-				}
-				this.sessions.delete(id);
-				console.debug(`[MCP HTTP] Cleaned up expired session ${id}`);
+				expiredIds.add(id);
 			}
+		}
+
+		if (expiredIds.size === 0) return;
+
+		const remaining = new Set<SSEStream>();
+		for (const stream of this.activeStreams) {
+			if (expiredIds.has(stream.sessionId)) {
+				if (!stream.response.destroyed) {
+					stream.response.end();
+				}
+			} else {
+				remaining.add(stream);
+			}
+		}
+		this.activeStreams = remaining;
+
+		for (const id of expiredIds) {
+			this.sessions.delete(id);
+			console.debug(`[MCP HTTP] Cleaned up expired session ${id}`);
 		}
 	}
 

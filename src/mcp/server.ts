@@ -196,7 +196,13 @@ export class McpServer {
 
 		// Notifications (no id) don't expect a response
 		if (req.id === undefined) {
-			this.config.onMessage(sock, req);
+			const notifRequest: McpRequest = {
+				jsonrpc: "2.0",
+				id: 0,
+				method: req.method,
+				params: req.params || {},
+			};
+			this.config.onMessage(sock, notifRequest);
 			return;
 		}
 
