@@ -11,8 +11,12 @@ interface HttpReplyFunction {
 interface Session {
 	id: string;
 	createdAt: number;
+	lastAccessedAt: number;
 	streams: Set<http.ServerResponse>;
 }
+
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface SSEStream {
 	response: http.ServerResponse;
@@ -33,6 +37,7 @@ export class McpHttpServer {
 	private sessions: Map<string, Session> = new Map();
 	private activeStreams: Set<SSEStream> = new Set();
 	private eventIdCounter = 0;
+	private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor(config?: McpHttpServerConfig) {
 		this.config = config || {
@@ -47,6 +52,10 @@ export class McpHttpServer {
 				this.handleRequest(req, res);
 			});
 
+			// Increase keep-alive timeout to reduce connection churn
+			this.server.keepAliveTimeout = 65000;
+			this.server.headersTimeout = 70000;
+
 			this.server.on("error", (error: NodeJS.ErrnoException) => {
 				if (error.code === "EADDRINUSE") {
 					console.error(`[MCP HTTP] Port ${port} is in use`);
@@ -57,15 +66,38 @@ export class McpHttpServer {
 				}
 			});
 
+			// Prevent connection errors from crashing the server
+			this.server.on("clientError", (error: NodeJS.ErrnoException, socket) => {
+				if (error.code === "ECONNRESET" || error.code === "EPIPE") {
+					return;
+				}
+				console.debug("[MCP HTTP] Client error:", error.code || error.message);
+				if (socket.writable) {
+					socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+				}
+			});
+
 			this.server.listen(port, "127.0.0.1", () => {
 				this.port = (this.server.address() as { port: number })?.port || port;
 				console.debug(`[MCP HTTP] Server started on port ${this.port}`);
+
+				// Start periodic session cleanup
+				this.cleanupInterval = setInterval(() => {
+					this.cleanupExpiredSessions();
+				}, SESSION_CLEANUP_INTERVAL_MS);
+
 				resolve(this.port);
 			});
 		});
 	}
 
 	stop(): void {
+		// Stop session cleanup timer
+		if (this.cleanupInterval) {
+			clearInterval(this.cleanupInterval);
+			this.cleanupInterval = null;
+		}
+
 		// Close all active SSE streams
 		for (const stream of this.activeStreams) {
 			stream.response.end();
@@ -102,6 +134,27 @@ export class McpHttpServer {
 	}
 
 	private async handleRequest(
+		req: http.IncomingMessage,
+		res: http.ServerResponse
+	): Promise<void> {
+		try {
+			return await this.handleRequestInner(req, res);
+		} catch (error) {
+			console.error("[MCP HTTP] Unhandled error in request handler:", error);
+			if (!res.headersSent) {
+				res.writeHead(500, { "Content-Type": "application/json" });
+				res.end(JSON.stringify({
+					jsonrpc: "2.0",
+					error: { code: -32603, message: "Internal server error" },
+					id: null,
+				}));
+			} else if (!res.destroyed) {
+				res.end();
+			}
+		}
+	}
+
+	private async handleRequestInner(
 		req: http.IncomingMessage,
 		res: http.ServerResponse
 	): Promise<void> {
@@ -183,19 +236,25 @@ export class McpHttpServer {
 		req: http.IncomingMessage,
 		res: http.ServerResponse
 	): void {
-		// Validate Accept header
-		const accept = req.headers.accept || "";
-		if (!accept.includes("text/event-stream")) {
+		// Validate Accept header (be lenient — some clients may send */*)
+		const accept = req.headers.accept || "*/*";
+		if (!accept.includes("text/event-stream") && !accept.includes("*/*")) {
 			res.writeHead(406, { "Content-Type": "application/json" });
-			res.end(JSON.stringify({ error: "Must accept text/event-stream" }));
+			res.end(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32600, message: "Accept header must include text/event-stream" },
+				id: null,
+			}));
 			return;
 		}
 
 		// Create new session
 		const sessionId = crypto.randomUUID();
+		const now = Date.now();
 		const session: Session = {
 			id: sessionId,
-			createdAt: Date.now(),
+			createdAt: now,
+			lastAccessedAt: now,
 			streams: new Set([res]),
 		};
 		this.sessions.set(sessionId, session);
@@ -255,10 +314,16 @@ export class McpHttpServer {
 		// Validate session
 		if (!sessionId || !this.sessions.has(sessionId)) {
 			res.writeHead(404, { "Content-Type": "application/json" });
-			res.end(JSON.stringify({ error: "Session not found" }));
+			res.end(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32001, message: "Session not found" },
+				id: null,
+			}));
 			return;
 		}
 
+		const session = this.sessions.get(sessionId)!;
+		session.lastAccessedAt = Date.now();
 		const body = await this.readRequestBody(req);
 		let messages: { id?: string | number; method?: string; params?: unknown; [key: string]: unknown }[];
 
@@ -267,7 +332,11 @@ export class McpHttpServer {
 			messages = Array.isArray(parsed) ? parsed : [parsed];
 		} catch (error) {
 			res.writeHead(400, { "Content-Type": "application/json" });
-			res.end(JSON.stringify({ error: "Invalid JSON" }));
+			res.end(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32700, message: "Parse error" },
+				id: null,
+			}));
 			return;
 		}
 
@@ -302,7 +371,11 @@ export class McpHttpServer {
 		);
 		if (!stream) {
 			res.writeHead(410, { "Content-Type": "application/json" });
-			res.end(JSON.stringify({ error: "SSE connection lost" }));
+			res.end(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32000, message: "SSE connection lost" },
+				id: null,
+			}));
 			return;
 		}
 
@@ -345,7 +418,27 @@ export class McpHttpServer {
 				method: request.method as string,
 				params: (request.params as Record<string, unknown>) || {},
 			};
-			this.config.onMessage(mcpRequest, reply);
+			try {
+				this.config.onMessage(mcpRequest, reply);
+			} catch (error) {
+				console.error(`[MCP HTTP] Error processing request ${mcpRequest.method}:`, error);
+				reply({
+					error: { code: -32603, message: `Internal error: ${(error as Error)?.message || "unknown"}` },
+				});
+			}
+			} else if (request.method) {
+				// Notification — just process, no response needed
+				try {
+					const notifRequest: McpRequest = {
+						jsonrpc: "2.0",
+						id: 0,
+						method: request.method as string,
+						params: (request.params as Record<string, unknown>) || {},
+					};
+					this.config.onMessage(notifRequest, () => {});
+				} catch (error) {
+					console.error(`[MCP HTTP] Error processing notification ${request.method}:`, error);
+				}
 			}
 		}
 
@@ -370,16 +463,53 @@ export class McpHttpServer {
 	}
 
 	private async readRequestBody(req: http.IncomingMessage): Promise<string> {
+		const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 		return new Promise((resolve, reject) => {
-			let body = "";
-			req.on("data", (chunk) => {
-				body += chunk.toString();
+			const chunks: Buffer[] = [];
+			let size = 0;
+			req.on("data", (chunk: Buffer) => {
+				size += chunk.length;
+				if (size > MAX_BODY_SIZE) {
+					req.destroy();
+					reject(new Error("Request body too large"));
+					return;
+				}
+				chunks.push(chunk);
 			});
 			req.on("end", () => {
-				resolve(body);
+				resolve(Buffer.concat(chunks).toString());
 			});
 			req.on("error", reject);
 		});
+	}
+
+	private cleanupExpiredSessions(): void {
+		const now = Date.now();
+		const expiredIds = new Set<string>();
+		for (const [id, session] of this.sessions) {
+			if (now - session.lastAccessedAt > SESSION_TTL_MS) {
+				expiredIds.add(id);
+			}
+		}
+
+		if (expiredIds.size === 0) return;
+
+		const remaining = new Set<SSEStream>();
+		for (const stream of this.activeStreams) {
+			if (expiredIds.has(stream.sessionId)) {
+				if (!stream.response.destroyed) {
+					stream.response.end();
+				}
+			} else {
+				remaining.add(stream);
+			}
+		}
+		this.activeStreams = remaining;
+
+		for (const id of expiredIds) {
+			this.sessions.delete(id);
+			console.debug(`[MCP HTTP] Cleaned up expired session ${id}`);
+		}
 	}
 
 	private setCORSHeaders(res: http.ServerResponse): void {

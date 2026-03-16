@@ -9,7 +9,7 @@ export interface McpResponse {
 	jsonrpc: "2.0";
 	id: string | number;
 	result?: unknown;
-	error?: { code: number; message: string };
+	error?: { code: number; message: string; data?: unknown };
 }
 
 export interface McpNotification {

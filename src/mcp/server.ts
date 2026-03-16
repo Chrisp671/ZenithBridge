@@ -51,7 +51,20 @@ export class McpServer {
 			console.debug(`[MCP] Total connected clients: ${this.connectedClients.size}`);
 
 			sock.on("message", (data) => {
-				this.handleMessage(sock, data.toString());
+				try {
+					this.handleMessage(sock, data.toString());
+				} catch (error) {
+					console.error("[MCP] Unhandled error in message handler:", error);
+					try {
+						sock.send(JSON.stringify({
+							jsonrpc: "2.0",
+							error: { code: -32603, message: "Internal server error" },
+							id: null,
+						}));
+					} catch {
+						// Socket may already be closed
+					}
+				}
 			});
 
 			sock.on("close", () => {
@@ -173,7 +186,24 @@ export class McpServer {
 			req = JSON.parse(raw);
 		} catch {
 			console.debug("[MCP] Invalid JSON received");
-			return; // ignore invalid JSON
+			sock.send(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32700, message: "Parse error" },
+				id: null,
+			}));
+			return;
+		}
+
+		// Notifications (no id) don't expect a response
+		if (req.id === undefined) {
+			const notifRequest: McpRequest = {
+				jsonrpc: "2.0",
+				id: 0,
+				method: req.method,
+				params: req.params || {},
+			};
+			this.config.onMessage(sock, notifRequest);
+			return;
 		}
 
 		this.config.onMessage(sock, req);
