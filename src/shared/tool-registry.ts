@@ -43,13 +43,9 @@ export class ToolRegistry {
 		if (!tool) {
 			console.error(`[ToolRegistry] Unknown tool called: ${toolName}`, toolArgs);
 			return reply({
-				result: {
-					content: [
-						{
-							type: "text",
-							text: `Tool '${toolName}' is not registered`,
-						},
-					],
+				error: {
+					code: -32601,
+					message: `Tool '${toolName}' is not registered`,
 				},
 			});
 		}
