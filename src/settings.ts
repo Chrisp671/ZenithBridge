@@ -121,7 +121,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		new Setting(containerEl).setName("Claude Code settings").setHeading();
+		new Setting(containerEl).setName("Claude Code").setHeading();
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);

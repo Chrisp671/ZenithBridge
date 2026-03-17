@@ -383,8 +383,6 @@ export class McpHttpServer {
 
 		for (const request of messages) {
 			if (request.method && request.id !== undefined) {
-				const requestId = request.id;
-				const requestMethod = request.method;
 				const reply: HttpReplyFunction = (msg) => {
 					const response: McpResponse = {
 						jsonrpc: "2.0",

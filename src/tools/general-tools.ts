@@ -161,7 +161,7 @@ export class GeneralTools {
 				name: "get_current_file",
 				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					const activeFile = this.app.workspace.getActiveFile();
-					return reply({
+					reply({
 						result: {
 							content: [
 								{
@@ -187,7 +187,7 @@ export class GeneralTools {
 							regex.test(path)
 						);
 					}
-					return reply({
+					reply({
 						result: {
 							content: [
 								{
@@ -207,13 +207,13 @@ export class GeneralTools {
 					try {
 						const { path, view_range } = args || {};
 						if (!path || typeof path !== "string") {
-							return reply({
+							reply({
 								error: { code: -32602, message: "invalid path parameter" },
 							});
 						}
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
-							return reply({
+							reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
@@ -238,7 +238,7 @@ export class GeneralTools {
 									);
 								})
 								.map((file) => file.path);
-							return reply({
+							reply({
 								result: {
 									content: [
 										{
@@ -279,7 +279,7 @@ export class GeneralTools {
 									.map((line, index) => `${index + 1}: ${line}`)
 									.join("\n");
 							}
-							return reply({
+							reply({
 								result: {
 									content: [
 										{
@@ -311,13 +311,13 @@ export class GeneralTools {
 							typeof old_str !== "string" ||
 							typeof new_str !== "string"
 						) {
-							return reply({
+							reply({
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
-							return reply({
+							reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
@@ -325,14 +325,14 @@ export class GeneralTools {
 						// Check for exact matches
 						const matches = content.split(old_str).length - 1;
 						if (matches === 0) {
-							return reply({
+							reply({
 								error: {
 									code: -32603,
 									message: "No match found for replacement text",
 								},
 							});
 						} else if (matches > 1) {
-							return reply({
+							reply({
 								error: {
 									code: -32603,
 									message: `Found ${matches} matches for replacement text. Please provide more specific text to match exactly one location.`,
@@ -341,7 +341,7 @@ export class GeneralTools {
 						}
 						const newContent = content.replace(old_str, new_str);
 						await this.app.vault.adapter.write(normalizedPath, newContent);
-						return reply({
+						reply({
 							result: {
 								content: [
 									{
@@ -371,20 +371,20 @@ export class GeneralTools {
 							typeof path !== "string" ||
 							typeof file_text !== "string"
 						) {
-							return reply({
+							reply({
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
-							return reply({
+							reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
 						// Check if file already exists
 						try {
 							await this.app.vault.adapter.read(normalizedPath);
-							return reply({
+							reply({
 								error: {
 									code: -32603,
 									message:
@@ -395,7 +395,7 @@ export class GeneralTools {
 							// File doesn't exist, which is what we want for create
 						}
 						await this.app.vault.adapter.write(normalizedPath, file_text);
-						return reply({
+						reply({
 							result: {
 								content: [
 									{
@@ -426,13 +426,13 @@ export class GeneralTools {
 							typeof insert_line !== "number" ||
 							typeof new_str !== "string"
 						) {
-							return reply({
+							reply({
 								error: { code: -32602, message: "invalid parameters" },
 							});
 						}
 						const normalizedPath = normalizePath(path);
 						if (!normalizedPath) {
-							return reply({
+							reply({
 								error: { code: -32603, message: "invalid file path" },
 							});
 						}
@@ -440,7 +440,7 @@ export class GeneralTools {
 						const lines = content.split("\n");
 						// Validate insert_line
 						if (insert_line < 0 || insert_line > lines.length) {
-							return reply({
+							reply({
 								error: {
 									code: -32603,
 									message: `Invalid insert_line ${insert_line}. Must be between 0 and ${lines.length}`,
@@ -452,7 +452,7 @@ export class GeneralTools {
 						lines.splice(insert_line, 0, ...newLines);
 						const newContent = lines.join("\n");
 						await this.app.vault.adapter.write(normalizedPath, newContent);
-						return reply({
+						reply({
 							result: {
 								content: [
 									{
@@ -478,7 +478,7 @@ export class GeneralTools {
 					try {
 						const { functionBody } = args || {};
 						if (!functionBody || typeof functionBody !== "string") {
-							return reply({
+							reply({
 								error: {
 									code: -32602,
 									message:
@@ -508,7 +508,7 @@ export class GeneralTools {
 						} catch {
 							serializedResult = `[Non-serializable result: ${typeof result}]`;
 						}
-						return reply({
+						reply({
 							result: {
 								content: [
 									{

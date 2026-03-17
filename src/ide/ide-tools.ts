@@ -78,8 +78,8 @@ export class IdeTools {
 					const { old_file_path, tab_name } = args || {};
 					
 					console.debug(`[MCP] OpenDiff requested for ${String(old_file_path)} (tab: ${String(tab_name)})`);
-					
-					return reply({
+
+					reply({
 						result: {
 							content: [
 								{
@@ -93,14 +93,14 @@ export class IdeTools {
 			},
 			{
 				name: "close_tab",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close a tab, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					const { tab_name } = args || {};
 					
 					console.debug(`[MCP] CloseTab requested for ${String(tab_name)}`);
-					
-					return reply({
+
+					reply({
 						result: {
 							content: [
 								{
@@ -114,12 +114,12 @@ export class IdeTools {
 			},
 			{
 				name: "closeAllDiffTabs",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close all diff tabs, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					console.debug(`[MCP] CloseAllDiffTabs requested`);
-					
-					return reply({
+
+					reply({
 						result: {
 							content: [
 								{
@@ -133,7 +133,7 @@ export class IdeTools {
 			},
 			{
 				name: "getDiagnostics",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						// For Obsidian, we don't have traditional LSP diagnostics
 						// but we can provide basic system/vault diagnostic information
@@ -144,7 +144,7 @@ export class IdeTools {
 							timestamp: new Date().toISOString(),
 						};
 
-						return reply({
+						reply({
 							result: {
 								diagnostics: [],
 								systemInfo: diagnostics,
