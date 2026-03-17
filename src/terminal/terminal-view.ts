@@ -157,7 +157,7 @@ export class ClaudeTerminalView extends ItemView {
 		}, 50);
 	}
 
-	onClose(): void {
+	onClose(): Promise<void> {
 		this.isDestroyed = true;
 		this.plugin.getTerminalManager()?.unregisterSession(this.sessionState.sessionId);
 
@@ -174,6 +174,8 @@ export class ClaudeTerminalView extends ItemView {
 		if (this.terminal) {
 			this.terminal.dispose();
 		}
+
+		return Promise.resolve();
 	}
 
 	onResize(): void {
