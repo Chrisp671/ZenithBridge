@@ -72,11 +72,11 @@ export class IdeTools {
 		return [
 			{
 				name: "openDiff",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					// Claude Code is trying to open a diff view, but Obsidian doesn't have built-in diff functionality
 					// Just acknowledge the request successfully to prevent errors
 					const { old_file_path, tab_name } = args || {};
-					
+
 					console.debug(`[MCP] OpenDiff requested for ${String(old_file_path)} (tab: ${String(tab_name)})`);
 
 					reply({
@@ -89,15 +89,16 @@ export class IdeTools {
 							],
 						},
 					});
+					return Promise.resolve();
 				},
 			},
 			{
 				name: "close_tab",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					// Claude Code is trying to close a tab, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					const { tab_name } = args || {};
-					
+
 					console.debug(`[MCP] CloseTab requested for ${String(tab_name)}`);
 
 					reply({
@@ -110,11 +111,12 @@ export class IdeTools {
 							],
 						},
 					});
+					return Promise.resolve();
 				},
 			},
 			{
 				name: "closeAllDiffTabs",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					// Claude Code is trying to close all diff tabs, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					console.debug(`[MCP] CloseAllDiffTabs requested`);
@@ -129,11 +131,12 @@ export class IdeTools {
 							],
 						},
 					});
+					return Promise.resolve();
 				},
 			},
 			{
 				name: "getDiagnostics",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					try {
 						// For Obsidian, we don't have traditional LSP diagnostics
 						// but we can provide basic system/vault diagnostic information
@@ -158,6 +161,7 @@ export class IdeTools {
 							},
 						});
 					}
+					return Promise.resolve();
 				},
 			},
 		];

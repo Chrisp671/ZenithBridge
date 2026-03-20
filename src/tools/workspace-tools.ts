@@ -12,10 +12,10 @@ export class WorkspaceTools {
 	constructor(private app: App) {}
 
 
-	async handleGetWorkspaceInfo(
+	handleGetWorkspaceInfo(
 		req: McpRequest,
 		reply: McpReplyFunction
-	): Promise<void> {
+	): void {
 		try {
 			const vaultName = this.app.vault.getName();
 			const basePath = getVaultBasePath(this.app.vault.adapter);

@@ -159,25 +159,27 @@ export class GeneralTools {
 		return [
 			{
 				name: "get_current_file",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					const activeFile = this.app.workspace.getActiveFile();
-					return reply({
-						result: {
-							content: [
-								{
-									type: "text",
-									text: activeFile
-										? `Current file: ${activeFile.path}`
-										: "No file currently active",
-								},
-							],
-						},
-					});
+					return Promise.resolve(
+						reply({
+							result: {
+								content: [
+									{
+										type: "text",
+										text: activeFile
+											? `Current file: ${activeFile.path}`
+											: "No file currently active",
+									},
+								],
+							},
+						})
+					);
 				},
 			},
 			{
 				name: "get_workspace_files",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction): Promise<void> => {
 					const { pattern } = args || {};
 					const allFiles = this.app.vault.getFiles();
 					let filteredFiles = allFiles.map((file) => file.path);
@@ -187,18 +189,20 @@ export class GeneralTools {
 							regex.test(path)
 						);
 					}
-					return reply({
-						result: {
-							content: [
-								{
-									type: "text",
-									text: `Files in vault:\n${filteredFiles.join(
-										"\n"
-									)}`,
-								},
-							],
-						},
-					});
+					return Promise.resolve(
+						reply({
+							result: {
+								content: [
+									{
+										type: "text",
+										text: `Files in vault:\n${filteredFiles.join(
+											"\n"
+										)}`,
+									},
+								],
+							},
+						})
+					);
 				},
 			},
 			{

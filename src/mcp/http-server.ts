@@ -49,7 +49,8 @@ export class McpHttpServer {
 	start(port = 22360): Promise<number> {
 		return new Promise((resolve, reject) => {
 			this.server = http.createServer((req, res) => {
-				void this.handleRequest(req, res);
+				// eslint-disable-next-line @typescript-eslint/no-floating-promises -- handleRequest errors are caught internally
+				this.handleRequest(req, res);
 			});
 
 			// Increase keep-alive timeout to reduce connection churn
@@ -324,6 +325,7 @@ export class McpHttpServer {
 			return;
 		}
 
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Verified by has() check above
 		const session = this.sessions.get(sessionId)!;
 		session.lastAccessedAt = Date.now();
 		const body = await this.readRequestBody(req);
