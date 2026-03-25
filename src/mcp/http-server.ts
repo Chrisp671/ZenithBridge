@@ -416,8 +416,8 @@ export class McpHttpServer {
 				// Construct a proper McpRequest with required jsonrpc field
 			const mcpRequest: McpRequest = {
 				jsonrpc: "2.0",
-				id: request.id as string | number,
-				method: request.method as string,
+				id: request.id!,
+				method: request.method!,
 				params: (request.params as Record<string, unknown>) || {},
 			};
 			try {
@@ -434,7 +434,7 @@ export class McpHttpServer {
 					const notifRequest: McpRequest = {
 						jsonrpc: "2.0",
 						id: 0,
-						method: request.method as string,
+						method: request.method!,
 						params: (request.params as Record<string, unknown>) || {},
 					};
 					this.config.onMessage(notifRequest, () => {});

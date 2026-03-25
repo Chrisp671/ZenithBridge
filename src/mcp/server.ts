@@ -52,7 +52,8 @@ export class McpServer {
 
 			sock.on("message", (data) => {
 				try {
-					this.handleMessage(sock, data.toString());
+					const raw = Buffer.isBuffer(data) ? data.toString("utf-8") : String(data);
+					this.handleMessage(sock, raw);
 				} catch (error) {
 					console.error("[MCP] Unhandled error in message handler:", error);
 					try {
