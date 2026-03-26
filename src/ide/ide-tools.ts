@@ -72,7 +72,7 @@ export class IdeTools {
 		return [
 			{
 				name: "openDiff",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to open a diff view, but Obsidian doesn't have built-in diff functionality
 					// Just acknowledge the request successfully to prevent errors
 					const { old_file_path, tab_name } = args || {};
@@ -93,7 +93,7 @@ export class IdeTools {
 			},
 			{
 				name: "close_tab",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close a tab, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					const { tab_name } = args || {};
@@ -114,7 +114,7 @@ export class IdeTools {
 			},
 			{
 				name: "closeAllDiffTabs",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					// Claude Code is trying to close all diff tabs, but Obsidian doesn't have the same tab concept
 					// Just acknowledge the request successfully
 					console.debug(`[MCP] CloseAllDiffTabs requested`);
@@ -133,7 +133,7 @@ export class IdeTools {
 			},
 			{
 				name: "getDiagnostics",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
 						// For Obsidian, we don't have traditional LSP diagnostics
 						// but we can provide basic system/vault diagnostic information

@@ -159,7 +159,7 @@ export class GeneralTools {
 		return [
 			{
 				name: "get_current_file",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					const activeFile = this.app.workspace.getActiveFile();
 					return reply({
 						result: {
@@ -177,7 +177,7 @@ export class GeneralTools {
 			},
 			{
 				name: "get_workspace_files",
-				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
+				handler: (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					const { pattern } = args || {};
 					const allFiles = this.app.vault.getFiles();
 					let filteredFiles = allFiles.map((file) => file.path);

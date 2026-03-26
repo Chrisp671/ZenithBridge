@@ -2,7 +2,7 @@ import { Tool, McpRequest, McpReplyFunction } from "../mcp/types";
 
 export interface ToolImplementation {
 	name: string;
-	handler: (args: Record<string, unknown>, reply: McpReplyFunction) => Promise<void>;
+	handler: (args: Record<string, unknown>, reply: McpReplyFunction) => void | Promise<void>;
 }
 
 export interface ToolDefinition extends Tool {

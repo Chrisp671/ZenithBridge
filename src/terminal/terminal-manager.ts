@@ -204,7 +204,7 @@ export class TerminalManager {
 	}
 
 	private focusLeaf(leaf: WorkspaceLeaf): void {
-		this.plugin.app.workspace.revealLeaf(leaf);
+		void this.plugin.app.workspace.revealLeaf(leaf);
 		window.setTimeout(() => {
 			const view = leaf.view as { focusTerminal?: () => void };
 			if (typeof view.focusTerminal === "function") {
