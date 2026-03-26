@@ -121,7 +121,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		new Setting(containerEl).setName("General").setHeading();
+		// Status and settings sections follow
 
 		this.displayServerStatus(containerEl);
 		this.displayServerSettings(containerEl);
@@ -134,7 +134,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Enable websocket server")
 			.setDesc(
-				"Enable the websocket server for IDE integration. This allows auto-discovery via lock files."
+				"Enable the websocket server for editor integration. This allows auto-discovery via lock files."
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -508,7 +508,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			const detail3 = wsDetails.createEl("div");
 			detail3.appendText("\u2022 Use ");
 			detail3.createEl("code").textContent = "claude";
-			detail3.appendText(" CLI and select \"Obsidian\" from ");
+			detail3.appendText(" and select \"Obsidian\" from ");
 			detail3.createEl("code").textContent = "/ide";
 			detail3.appendText(" list");
 		} else if (!this.plugin.settings.enableWebSocketServer) {
@@ -536,7 +536,7 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 				cls: "status-details",
 			});
 			const httpDetail1 = httpDetails.createEl("div");
-			httpDetail1.appendText("\u2022 SSE stream: ");
+			httpDetail1.appendText("\u2022 Event stream: ");
 			httpDetail1.createEl("code").textContent = `http://localhost:${serverInfo.httpPort}/sse`;
 			const httpDetail2 = httpDetails.createEl("div");
 			httpDetail2.appendText("\u2022 Add to client config: ");

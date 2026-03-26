@@ -24,7 +24,7 @@ export interface PseudoterminalArgs {
   env?: NodeJS.ProcessEnv;
 }
 
-async function writePromise(stream: Writable, data: string): Promise<void> {
+function writePromise(stream: Writable, data: string): Promise<void> {
   return new Promise((resolve, reject) => {
     stream.write(data, (error) => {
       if (error) reject(error);
