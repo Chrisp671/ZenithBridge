@@ -30,7 +30,7 @@ export class McpHandlers {
 		this.ideHandler = new IdeHandler(app, workspaceManager);
 	}
 
-	async handleRequest(sock: WebSocket, req: McpRequest): Promise<void> {
+	handleRequest(sock: WebSocket, req: McpRequest): void {
 		console.debug(`[MCP] Handling request: ${req.method}`);
 		const reply: McpReplyFunction = (msg) => {
 			const response = JSON.stringify({
@@ -42,23 +42,23 @@ export class McpHandlers {
 		};
 
 		// WebSocket requests use the WebSocket tool registry
-		return await this.handleRequestGeneric(req, reply, "ws");
+		this.handleRequestGeneric(req, reply, "ws");
 	}
 
-	async handleHttpRequest(
+	handleHttpRequest(
 		req: McpRequest,
 		reply: HttpMcpReplyFunction
-	): Promise<void> {
+	): void {
 		console.debug(`[MCP HTTP] Handling request: ${req.method}`);
 		// HTTP requests use the HTTP tool registry
-		return await this.handleRequestGeneric(req, reply, "http");
+		this.handleRequestGeneric(req, reply, "http");
 	}
 
-	private async handleRequestGeneric(
+	private handleRequestGeneric(
 		req: McpRequest,
 		reply: McpReplyFunction | HttpMcpReplyFunction,
 		source: "ws" | "http"
-	): Promise<void> {
+	): void | Promise<void> {
 		// First check if it's an IDE-specific method
 		if (this.ideHandler.isIdeMethod(req.method)) {
 			const handled = this.ideHandler.handleRequest(req, reply);

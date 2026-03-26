@@ -324,7 +324,12 @@ export class McpHttpServer {
 			return;
 		}
 
-		const session = this.sessions.get(sessionId)!;
+		const session = this.sessions.get(sessionId);
+		if (!session) {
+			res.writeHead(404, { "Content-Type": "application/json" });
+			res.end(JSON.stringify({ error: "Session not found" }));
+			return;
+		}
 		session.lastAccessedAt = Date.now();
 		const body = await this.readRequestBody(req);
 		let messages: { id?: string | number; method?: string; params?: unknown; [key: string]: unknown }[];
@@ -383,10 +388,12 @@ export class McpHttpServer {
 
 		for (const request of messages) {
 			if (request.method && request.id !== undefined) {
+				const reqId = request.id;
+				const reqMethod = request.method;
 				const reply: HttpReplyFunction = (msg) => {
 					const response: McpResponse = {
 						jsonrpc: "2.0",
-						id: request.id as string | number,
+						id: reqId,
 						...msg,
 					};
 					const eventId = ++this.eventIdCounter;
@@ -416,25 +423,26 @@ export class McpHttpServer {
 				// Construct a proper McpRequest with required jsonrpc field
 			const mcpRequest: McpRequest = {
 				jsonrpc: "2.0",
-				id: request.id!,
-				method: request.method!,
+				id: reqId,
+				method: reqMethod,
 				params: (request.params as Record<string, unknown>) || {},
 			};
 			try {
 				this.config.onMessage(mcpRequest, reply);
 			} catch (error) {
-				console.error(`[MCP HTTP] Error processing request ${mcpRequest.method}:`, error);
+				console.error(`[MCP HTTP] Error processing request ${reqMethod}:`, error);
 				reply({
 					error: { code: -32603, message: `Internal error: ${(error as Error)?.message || "unknown"}` },
 				});
 			}
 			} else if (request.method) {
 				// Notification — just process, no response needed
+				const notifMethod = request.method;
 				try {
 					const notifRequest: McpRequest = {
 						jsonrpc: "2.0",
 						id: 0,
-						method: request.method!,
+						method: notifMethod,
 						params: (request.params as Record<string, unknown>) || {},
 					};
 					this.config.onMessage(notifRequest, () => {});
@@ -464,7 +472,7 @@ export class McpHttpServer {
 		res.write(`data: ${data}\n\n`);
 	}
 
-	private async readRequestBody(req: http.IncomingMessage): Promise<string> {
+	private readRequestBody(req: http.IncomingMessage): Promise<string> {
 		const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 		return new Promise((resolve, reject) => {
 			const chunks: Buffer[] = [];
