@@ -42,7 +42,7 @@ export class McpHandlers {
 		};
 
 		// WebSocket requests use the WebSocket tool registry
-		this.handleRequestGeneric(req, reply, "ws");
+		void this.handleRequestGeneric(req, reply, "ws");
 	}
 
 	handleHttpRequest(
@@ -51,7 +51,7 @@ export class McpHandlers {
 	): void {
 		console.debug(`[MCP HTTP] Handling request: ${req.method}`);
 		// HTTP requests use the HTTP tool registry
-		this.handleRequestGeneric(req, reply, "http");
+		void this.handleRequestGeneric(req, reply, "http");
 	}
 
 	private handleRequestGeneric(
