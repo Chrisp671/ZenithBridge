@@ -507,9 +507,9 @@ export class ClaudeCodeSettingTab extends PluginSettingTab {
 			detail2.createEl("code").textContent = `${configDir}/ide/${serverInfo.wsPort}.lock`;
 			const detail3 = wsDetails.createEl("div");
 			detail3.appendText("\u2022 Use ");
-			detail3.createEl("code").textContent = "claude";
+			detail3.createEl("code").appendText("claude");
 			detail3.appendText(" and select \"Obsidian\" from ");
-			detail3.createEl("code").textContent = "/ide";
+			detail3.createEl("code").appendText("/ide");
 			detail3.appendText(" list");
 		} else if (!this.plugin.settings.enableWebSocketServer) {
 			wsStatus.createEl("span", { cls: "status-indicator status-disabled", text: "\u25CF" });
