@@ -50,7 +50,7 @@ This is an Obsidian plugin that implements MCP (Model Context Protocol) servers 
 - `getOpenFiles` - Return currently active file
 - `listFiles` - List files in vault with filtering
 - `getWorkspaceInfo` - Return vault metadata
-- `obsidian_api` - Execute Obsidian API commands
+- `obsidian_api` - Perform safe, predefined Obsidian API actions (getVaultName, listCommands, executeCommand, openFile, getFileMetadata)
 - `view` - View file contents with optional line ranges
 - `str_replace` - Replace text in files
 - `create` - Create new files

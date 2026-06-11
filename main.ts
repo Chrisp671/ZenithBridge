@@ -144,7 +144,7 @@ export default class ClaudeMcpPlugin extends Plugin {
 			}
 
 			// Small delay to ensure clean shutdown
-			await new Promise((resolve) => setTimeout(resolve, 500));
+			await new Promise((resolve) => window.setTimeout(resolve, 500));
 
 			// Restart server with new settings
 			await this.initializeMcpServer();

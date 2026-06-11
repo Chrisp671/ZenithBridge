@@ -1,5 +1,4 @@
-import { App } from "obsidian";
-import * as obsidian from "obsidian";
+import { App, TFile } from "obsidian";
 import { McpReplyFunction } from "../mcp/types";
 import { ToolImplementation, ToolDefinition } from "../shared/tool-registry";
 import { normalizePath } from "../obsidian/utils";
@@ -123,32 +122,40 @@ export const GENERAL_TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "obsidian_api",
-		description: `Use the Obsidian API directly. This is an experimental tool and should be used with caution. Only use this tool when the other Obsidian tools are insufficient.
-IMPORTANT: Be very careful when using this tool. It provides full, unrestricted access to the Obsidian API, which allows destructive actions.
-Definitions:
-- \`app\` is the Obsidian App instance.
-- \`obsidian\` is the 'obsidian' module import. I.e. the result of \`require('obsidian')\` or \`import * as obsidian from 'obsidian'\`.
-How to use:
-- Write a function body as a string that takes the Obsidian \`app\` instance as the first argument and the \`obsidian\` module as the second argument.
-  - Example: \`"return typeof app === undefined;"\`. This will return \`false\`, since \`app\` is the first argument and is defined.
-  - The string will be evaluated using the \`new Function\` constructor. \`new Function('app', 'obsidian', yourCode)\`.
-  - The App object is documented here: https://docs.obsidian.md/Reference/TypeScript+API/App. Make use of your expertise with Obsidian plugins to utilise this API.
-- Pass the function definition as a string to this tool.
-- The function will be called with the Obsidian \`app\` instance as the first argument, and the \`obsidian\` module as the second argument.
-- The return value of your function will be returned as the result of this tool.
-- NOTE: The \`obsidian\` module is provided as an argument so that you do not need to \`require\` or \`import\` it in your function body. Neither of these are available in the global scope and will not be available to the function.
-- NOTE: A return value is not required. If your function has a return statement we will attempt to serialize the value using JSON.stringify.
-- NOTE: Any error thrown by your function will be caught and returned as an error object.`,
+		description: `Perform a safe, predefined Obsidian API action. Use this when the other tools are insufficient.
+Supported actions:
+- getVaultName: return the name of the current vault.
+- listCommands: list the IDs and names of all available commands.
+- executeCommand: run a command by its ID (requires commandId; discover IDs with listCommands).
+- openFile: open a file in the workspace (requires path).
+- getFileMetadata: return cached metadata (frontmatter, links, headings, tags) for a file (requires path).`,
 		category: "general",
 		inputSchema: {
 			type: "object",
 			properties: {
-				functionBody: {
+				action: {
+					type: "string",
+					enum: [
+						"getVaultName",
+						"listCommands",
+						"executeCommand",
+						"openFile",
+						"getFileMetadata",
+					],
+					description: "The action to perform",
+				},
+				commandId: {
 					type: "string",
 					description:
-						"The full function body, as a plain string, to be called with the Obsidian `app` instance as the first argument and `obsidian` module as the second argument.",
+						"Command ID to execute (required for executeCommand; discover IDs with listCommands)",
+				},
+				path: {
+					type: "string",
+					description:
+						"Vault-relative file path (required for openFile and getFileMetadata)",
 				},
 			},
+			required: ["action"],
 		},
 	},
 ];
@@ -256,12 +263,15 @@ export class GeneralTools {
 								normalizedPath
 							);
 							let displayContent = content;
+							const range: unknown[] = Array.isArray(view_range)
+								? (view_range as unknown[])
+								: [];
+							const startLine = range.length === 2 ? range[0] : undefined;
+							const endLine = range.length === 2 ? range[1] : undefined;
 							if (
-								view_range &&
-								Array.isArray(view_range) &&
-								view_range.length === 2
+								typeof startLine === "number" &&
+								typeof endLine === "number"
 							) {
-								const [startLine, endLine] = view_range;
 								const lines = content.split("\n");
 								const start = Math.max(0, startLine - 1); // Convert to 0-indexed
 								const end =
@@ -476,58 +486,182 @@ export class GeneralTools {
 				name: "obsidian_api",
 				handler: async (args: Record<string, unknown>, reply: McpReplyFunction) => {
 					try {
-						const { functionBody } = args || {};
-						if (!functionBody || typeof functionBody !== "string") {
+						const action = args?.["action"];
+						if (typeof action !== "string") {
 							return reply({
 								error: {
 									code: -32602,
 									message:
-										"functionBody parameter is required and must be a string",
+										"action parameter is required and must be a string",
 								},
 							});
 						}
-						// Create and execute the function
-						// eslint-disable-next-line @typescript-eslint/no-implied-eval -- Required for the obsidian_api tool to execute user-provided function bodies
-						const fn = new Function("app", "obsidian", functionBody);
-						let result = fn(this.app, obsidian);
-						// Check if the result is a Promise and await it if so
-						const isThenable =
-							typeof result === "object" &&
-							result !== null &&
-							typeof result.then === "function";
-						if (result instanceof Promise || isThenable) {
-							result = await result;
-						}
-						// Serialize the result
-						let serializedResult: string;
-						try {
-							serializedResult =
-								result !== undefined
-									? JSON.stringify(result, null, 2)
-									: "undefined";
-						} catch {
-							serializedResult = `[Non-serializable result: ${typeof result}]`;
-						}
-						return reply({
-							result: {
-								content: [
-									{
-										type: "text",
-										text: `Function executed successfully.\nResult: ${serializedResult}`,
-									},
-								],
-							},
-						});
+						return await this.handleApiAction(action, args, reply);
 					} catch (error: unknown) {
 						return reply({
 							error: {
 								code: -32603,
-								message: `Error executing function: ${(error as Error).message}`,
+								message: `Error performing action: ${(error as Error).message}`,
 							},
 						});
 					}
 				},
 			},
 		];
+	}
+
+	private async handleApiAction(
+		action: string,
+		args: Record<string, unknown>,
+		reply: McpReplyFunction
+	): Promise<void> {
+		switch (action) {
+			case "getVaultName": {
+				return reply({
+					result: {
+						content: [
+							{
+								type: "text",
+								text: `Vault name: ${this.app.vault.getName()}`,
+							},
+						],
+					},
+				});
+			}
+			case "listCommands": {
+				const commands = this.getCommandRegistry();
+				if (!commands) {
+					return reply({
+						error: {
+							code: -32603,
+							message: "Command registry is unavailable",
+						},
+					});
+				}
+				const list = commands
+					.listCommands()
+					.map((command) => `${command.id}: ${command.name}`)
+					.join("\n");
+				return reply({
+					result: {
+						content: [
+							{
+								type: "text",
+								text: list || "No commands available",
+							},
+						],
+					},
+				});
+			}
+			case "executeCommand": {
+				const commandId = args?.["commandId"];
+				if (typeof commandId !== "string" || !commandId) {
+					return reply({
+						error: {
+							code: -32602,
+							message:
+								"commandId parameter is required for executeCommand",
+						},
+					});
+				}
+				const commands = this.getCommandRegistry();
+				if (!commands) {
+					return reply({
+						error: {
+							code: -32603,
+							message: "Command registry is unavailable",
+						},
+					});
+				}
+				const executed = commands.executeCommandById(commandId);
+				return reply({
+					result: {
+						content: [
+							{
+								type: "text",
+								text: executed
+									? `Executed command: ${commandId}`
+									: `Command not found: ${commandId}`,
+							},
+						],
+					},
+				});
+			}
+			case "openFile": {
+				const file = this.resolveFileArg(args);
+				if (typeof file === "string") {
+					return reply({ error: { code: -32602, message: file } });
+				}
+				await this.app.workspace.getLeaf().openFile(file);
+				return reply({
+					result: {
+						content: [
+							{
+								type: "text",
+								text: `Opened file: ${file.path}`,
+							},
+						],
+					},
+				});
+			}
+			case "getFileMetadata": {
+				const file = this.resolveFileArg(args);
+				if (typeof file === "string") {
+					return reply({ error: { code: -32602, message: file } });
+				}
+				const cache = this.app.metadataCache.getFileCache(file);
+				return reply({
+					result: {
+						content: [
+							{
+								type: "text",
+								text: cache
+									? JSON.stringify(cache, null, 2)
+									: "No metadata available",
+							},
+						],
+					},
+				});
+			}
+			default:
+				return reply({
+					error: {
+						code: -32602,
+						message: `Unknown action: ${action}. Supported actions: getVaultName, listCommands, executeCommand, openFile, getFileMetadata`,
+					},
+				});
+		}
+	}
+
+	// Resolve the `path` argument to a vault file, or return an error message
+	private resolveFileArg(args: Record<string, unknown>): TFile | string {
+		const path = args?.["path"];
+		if (typeof path !== "string" || !path) {
+			return "path parameter is required for this action";
+		}
+		const normalizedPath = normalizePath(path);
+		if (!normalizedPath) {
+			return `Invalid path: ${path}`;
+		}
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
+		if (!(file instanceof TFile)) {
+			return `File not found: ${path}`;
+		}
+		return file;
+	}
+
+	// The command registry is not part of the public typed API, so access it
+	// through a narrow, explicitly typed view instead of `any`
+	private getCommandRegistry(): {
+		listCommands(): { id: string; name: string }[];
+		executeCommandById(id: string): boolean;
+	} | null {
+		const appWithCommands = this.app as unknown as {
+			commands?: {
+				listCommands(): { id: string; name: string }[];
+				executeCommandById(id: string): boolean;
+			};
+		};
+		return appWithCommands.commands ?? null;
 	}
 }

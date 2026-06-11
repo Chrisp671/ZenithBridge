@@ -37,7 +37,7 @@ export class WorkspaceManager {
 		);
 
 		// Listen for DOM selection changes (replaces editor-change polling)
-		this.plugin.registerDomEvent(document, "selectionchange", () => {
+		this.plugin.registerDomEvent(activeDocument, "selectionchange", () => {
 			this.checkAndSendSelection();
 		});
 	}
