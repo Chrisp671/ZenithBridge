@@ -1,7 +1,7 @@
 {
 	"id": "zenith-bridge",
 	"name": "Zenith Bridge",
-	"minAppVersion": "1.0.0",
+	"minAppVersion": "1.7.2",
 	"version": "1.2.5",
 	"description": "Run AI agent terminals in your vault and connect external tools via the model context protocol.",
 	"author": "Chrisp671",
