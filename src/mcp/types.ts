@@ -37,6 +37,7 @@ export interface Tool {
 	inputSchema: {
 		type: "object";
 		properties: Record<string, unknown>;
+		required?: string[];
 	};
 }
 

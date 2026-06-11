@@ -55,7 +55,7 @@ export class IdeHandler {
 		reply: McpReplyFunction
 	): boolean {
 		// Send initial file context when Claude connects
-		setTimeout(() => {
+		window.setTimeout(() => {
 			console.debug("[IDE] Sending initial file context");
 			this.workspaceManager?.sendInitialContext();
 		}, 200);

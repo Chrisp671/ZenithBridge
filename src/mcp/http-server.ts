@@ -37,7 +37,7 @@ export class McpHttpServer {
 	private sessions: Map<string, Session> = new Map();
 	private activeStreams: Set<SSEStream> = new Set();
 	private eventIdCounter = 0;
-	private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+	private cleanupInterval: number | null = null;
 
 	constructor(config?: McpHttpServerConfig) {
 		this.config = config || {
@@ -83,7 +83,7 @@ export class McpHttpServer {
 				console.debug(`[MCP HTTP] Server started on port ${this.port}`);
 
 				// Start periodic session cleanup
-				this.cleanupInterval = setInterval(() => {
+				this.cleanupInterval = window.setInterval(() => {
 					this.cleanupExpiredSessions();
 				}, SESSION_CLEANUP_INTERVAL_MS);
 
@@ -96,7 +96,7 @@ export class McpHttpServer {
 	stop(): void {
 		// Stop session cleanup timer
 		if (this.cleanupInterval) {
-			clearInterval(this.cleanupInterval);
+			window.clearInterval(this.cleanupInterval);
 			this.cleanupInterval = null;
 		}
 
@@ -293,16 +293,16 @@ export class McpHttpServer {
 		});
 
 		// Send periodic ping to keep connection alive
-		const pingInterval = setInterval(() => {
+		const pingInterval = window.setInterval(() => {
 			if (res.destroyed) {
-				clearInterval(pingInterval);
+				window.clearInterval(pingInterval);
 				return;
 			}
 			this.sendSSEMessage(res, "ping", new Date().toISOString());
 		}, 30000);
 
 		req.on("close", () => {
-			clearInterval(pingInterval);
+			window.clearInterval(pingInterval);
 		});
 	}
 
@@ -335,8 +335,13 @@ export class McpHttpServer {
 		let messages: { id?: string | number; method?: string; params?: unknown; [key: string]: unknown }[];
 
 		try {
-			const parsed = JSON.parse(body);
-			messages = Array.isArray(parsed) ? parsed : [parsed];
+			const parsed = JSON.parse(body) as unknown;
+			messages = (Array.isArray(parsed) ? parsed : [parsed]) as {
+				id?: string | number;
+				method?: string;
+				params?: unknown;
+				[key: string]: unknown;
+			}[];
 		} catch {
 			res.writeHead(400, { "Content-Type": "application/json" });
 			res.end(JSON.stringify({

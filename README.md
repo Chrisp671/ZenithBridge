@@ -273,7 +273,7 @@ This plugin implements a flexible tool system that allows different tools to be 
 1. **Shared Tools** (available to both IDE and MCP clients):
    - File operations: `view`, `str_replace`, `create`, `insert`
    - Workspace operations: `get_current_file`, `get_workspace_files`
-   - Obsidian API access: `obsidian_api`
+   - Obsidian API actions (open files, run commands, read metadata): `obsidian_api`
 
 2. **IDE-specific Tools** (only available via Claude Code WebSocket):
    - `getDiagnostics` - System and vault diagnostics

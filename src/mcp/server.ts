@@ -171,8 +171,10 @@ export class McpServer {
 		for (const lockPath of this.lockFilePaths) {
 			try {
 				if (fs.existsSync(lockPath)) {
-					const lockContent = JSON.parse(fs.readFileSync(lockPath, "utf8"));
-					lockContent.workspaceFolders = [basePath];
+					const lockContent = JSON.parse(
+						fs.readFileSync(lockPath, "utf8")
+					) as Record<string, unknown>;
+					lockContent["workspaceFolders"] = [basePath];
 					fs.writeFileSync(lockPath, JSON.stringify(lockContent), { mode: 0o600 });
 				}
 			} catch (error) {
@@ -184,7 +186,7 @@ export class McpServer {
 	private handleMessage(sock: WebSocket, raw: string): void {
 		let req: McpRequest;
 		try {
-			req = JSON.parse(raw);
+			req = JSON.parse(raw) as McpRequest;
 		} catch {
 			console.debug("[MCP] Invalid JSON received");
 			sock.send(JSON.stringify({
